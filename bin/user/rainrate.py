@@ -5,13 +5,12 @@ Copyright (C)2020 by John A Kline (john@johnkline.com)
 Distributed under the terms of the GNU Public License (GPLv3)
 
 RainRate is a WeeWX service that inserts or overwrites rainRate
-in loop packets to the he max of 5m through 15m rainRate calculations.
+in loop packets to the he max of 1m through 15m rainRate calculations.
 """
 
 import logging
 import sys
 import time
-import random
 
 from dataclasses import dataclass
 from typing import Any, Dict, List
@@ -41,8 +40,9 @@ if weewx.__version__ < "4":
 
 @dataclass
 class RainEntry:
-    timestamp: int
-    amount   : float
+    expiration: int
+    timestamp : int
+    amount    : float
 
 
 class RainRate(StdService):
@@ -62,9 +62,9 @@ class RainRate(StdService):
             log.info("RainRate is disabled. Enable it in the RainRate section of weewx.conf.")
             return
 
-        self.total_rain: float = 0
         self.rain_entries : List[RainEntry] = []
         self.initialized = False
+        self.count = 0
 
         self.bind(weewx.PRE_LOOP, self.pre_loop)
         self.bind(weewx.NEW_LOOP_PACKET, self.new_loop)
@@ -97,8 +97,7 @@ class RainRate(StdService):
                 pkt_time = pkt['dateTime']
                 fifteen_mins_later = pkt_time + 900
                 if 'rain' in pkt and pkt['rain'] is not None and pkt['rain'] > 0.0:
-                    self.total_rain += pkt['rain']
-                    self.rain_entries.append(RainEntry(timestamp = fifteen_mins_later, amount = pkt['rain']))
+                    self.rain_entries.append(RainEntry(expiration = fifteen_mins_later, timestamp = pkt_time, amount = pkt['rain']))
                     pkt_count += 1
             log.debug('Collected %d archive packets containing rain in %f seconds.' % (pkt_count, time.time() - start))
         except Exception as e:
@@ -139,22 +138,21 @@ class RainRate(StdService):
         if 'rain' in pkt and pkt['rain'] is not None and pkt['rain'] > 0.0:
             pkt_time = pkt['dateTime']
             fifteen_mins_later = pkt_time + 900
-            self.total_rain += pkt['rain']
-            self.rain_entries.insert(0, RainEntry(timestamp = fifteen_mins_later, amount = pkt['rain']))
-            log.debug('pkt_time: %d, found rain of %f, adding to total_rain.' % (pkt_time, pkt['rain']))
+            self.rain_entries.insert(0, RainEntry(expiration = fifteen_mins_later, timestamp = pkt_time, amount = pkt['rain']))
+            log.debug('pkt_time: %d, found rain of %f.' % (pkt_time, pkt['rain']))
 
         # Debit and remove any entries that have matured.
-        while len(self.rain_entries) > 0 and self.rain_entries[-1].timestamp <= pkt_time:
+        while len(self.rain_entries) > 0 and self.rain_entries[-1].expiration <= pkt_time:
             del self.rain_entries[-1]
 
         # Add/update rainRate in packet
-        # Compute 5-15m rainRates and report the largest rate.
-        rainrates = [ 0.0 ] * 16 # cells 0, 1, 2, 3, 4 will remain 0.0 as we're only calculating 5-15.
+        # Compute 1-15m rainRates and report the largest rate.
+        rainrates = [ 0.0 ] * 16 # cell 0 will remain 0.0 as we're only calculating 1-15.
         for entry in self.rain_entries:
-            for minute in range(5, 16):
+            for minute in range(1, 16):
                 if pkt_time - entry.timestamp < minute * 60:
                     rainrates[minute] += entry.amount
-        for minute in range(5, 16):
+        for minute in range(1, 16):
             rainrates[minute] = 3600.0 * rainrates[minute] / (minute * 60)
 
         pkt['rainRate'] = max(rainrates)

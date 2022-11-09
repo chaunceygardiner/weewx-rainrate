@@ -11,7 +11,7 @@ Copyright (C)2022 by John A Kline (john@johnkline.com)
 weewx-rainrate is a WeeWX service that attempts to produce a
 "better" rainRate in loop packets.  It ignores any rainRate in the loop packet
 by inserting(overwriting) rainRate to be the max of the
-5 through 15m rain rate as computed by the extension.
+1 through 15m rain rate as computed by the extension.
 
 ## Why require Python 3.7 or later?
 
