@@ -28,7 +28,7 @@ from weewx.engine import StdService
 # get a logger object
 log = logging.getLogger(__name__)
 
-RAIN24H_VERSION = '0.01'
+RAIN24H_VERSION = '0.02'
 
 if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and sys.version_info[1] < 7):
     raise weewx.UnsupportedFeature(
@@ -148,12 +148,37 @@ class RainRate(StdService):
         # Add/update rainRate in packet
         # Compute 1-15m rainRates and report the largest rate.
         rainrates = [ 0.0 ] * 16 # cell 0 will remain 0.0 as we're only calculating 1-15.
+        total_rain = 0.0
         for entry in self.rain_entries:
+            total_rain += entry.amount
             for minute in range(1, 16):
                 if pkt_time - entry.timestamp < minute * 60:
                     rainrates[minute] += entry.amount
         for minute in range(1, 16):
             rainrates[minute] = round(3600.0 * rainrates[minute] / (minute * 60), 2)
+
+        # Before taking the max of the computed 1-15m rain rates, consider low rain cases.
+        # If there was just one bucket tip (in the first minute), we would see a rate of 0.6
+        # selected (which is absurdly high).  As such, we'll only consider the 15m bucket
+        #(rate of 0.04).
+        #
+        # Similarly, for cases where only 0.02 has been observed in the last 15m, the
+        # 1-9m buckets will report unreasonably high rates, so zero them out.
+        #
+        # Lasttly, for cases where 0.03 has been observed in the last 15m, zero out the
+        # 1-4m buckets.
+        if total_rain == 0.01:
+            # Zero everthing but minute 15.
+            for minute in range(1, 15):
+                rainrates[minute] = 0.0
+        elif total_rain  == 0.02:
+            # Zero minutes 1-9.
+            for minute in range(1, 10):
+                rainrates[minute] = 0.0
+        elif total_rain  == 0.03:
+            # Zero minutes 1-4.
+            for minute in range(1, 5):
+                rainrates[minute] = 0.0
 
         pkt['rainRate'] = max(rainrates)
         log.debug('new_loop(%d): raterates: %r' % (pkt['dateTime'], rainrates))

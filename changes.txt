@@ -1,5 +1,8 @@
 weewx-rainrate change history
 -----------------------------
 
-0.01 Release 2022/11/??
+0.02 Release 2022/11/09
+1. Special case the algorithm for rain rate when low volumes of rain are observed.
+
+0.01 Release 2022/11/08
 1. Initial release.
