@@ -153,7 +153,7 @@ class RainRate(StdService):
                 if pkt_time - entry.timestamp < minute * 60:
                     rainrates[minute] += entry.amount
         for minute in range(1, 16):
-            rainrates[minute] = 3600.0 * rainrates[minute] / (minute * 60)
+            rainrates[minute] = round(3600.0 * rainrates[minute] / (minute * 60), 2)
 
         pkt['rainRate'] = max(rainrates)
         log.debug('new_loop(%d): raterates: %r' % (pkt['dateTime'], rainrates))
