@@ -142,7 +142,6 @@ class RainRate(StdService):
             self.total_rain += pkt['rain']
             self.rain_entries.insert(0, RainEntry(timestamp = fifteen_mins_later, amount = pkt['rain']))
             log.debug('pkt_time: %d, found rain of %f, adding to total_rain.' % (pkt_time, pkt['rain']))
-            log.info('Rain encountered: %d: %f' % (pkt_time, pkt['rain']))
 
         # Debit and remove any entries that have matured.
         while len(self.rain_entries) > 0 and self.rain_entries[-1].timestamp <= pkt_time:
@@ -159,8 +158,5 @@ class RainRate(StdService):
             rainrates[minute] = 3600.0 * rainrates[minute] / (minute * 60)
 
         pkt['rainRate'] = max(rainrates)
-        if pkt['rainRate'] > 0.0:
-            log.info('new_loop(%d): raterates: %r' % (pkt['dateTime'], rainrates))
-            log.info('new_loop(%d): Added/updated pkt[rainRate] of %f' % (pkt['dateTime'], pkt['rainRate']))
         log.debug('new_loop(%d): raterates: %r' % (pkt['dateTime'], rainrates))
         log.debug('new_loop(%d): Added/updated pkt[rainRate] of %f' % (pkt['dateTime'], pkt['rainRate']))
