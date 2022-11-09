@@ -1,0 +1,5 @@
+weewx-rainrate change history
+-----------------------------
+
+0.01 Release 2022/11/??
+1. Initial release.
