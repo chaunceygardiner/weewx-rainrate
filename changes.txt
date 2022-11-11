@@ -1,13 +1,20 @@
 weewx-rainrate change history
 -----------------------------
 
+0.11 Release 2022/11/11
+-----------------------
+1. Move to 30s increments, from 1 min. increments, for more responsive rain rate.
+
 0.1 Release 2022/11/10
+----------------------
 1. Never use the last 60s for rainRate as it is thought to be too noisy.
 2. Refactor for testing.
 3. Add extensive tests.
 
 0.02 Release 2022/11/09
+-----------------------
 1. Special case the algorithm for rain rate when low volumes of rain are observed.
 
 0.01 Release 2022/11/08
+-----------------------
 1. Initial release.

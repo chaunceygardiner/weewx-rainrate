@@ -4,8 +4,33 @@ rainrate.py
 Copyright (C)2020 by John A Kline (john@johnkline.com)
 Distributed under the terms of the GNU Public License (GPLv3)
 
-RainRate is a WeeWX service that inserts or overwrites rainRate
-in loop packets to the he max of 1m through 15m rainRate calculations.
+weewx-rainrate is a WeeWX service that attempts to produce a
+"better" rainRate in loop packets.
+
+The impetus for this extension is that author purchased a
+high quality HyQuest Solutions TB3 siphoning rain gauge.
+It is accurate to 2% at any rain intensity, but with the
+siphon, two tips can come in quick succession.  As such
+the rainRate produced by measuring the time delta between
+two tips can be wildly overstated.
+
+weewx-rainrate ignores the rainRate in the loop packet (if present)
+by overwriting/inserting rainRate to be the max of the
+2 through 15m rain rate (in 30s increments)  as computed by the extension.
+
+For low rain cases:
+
+If there was just one bucket tip (in the first 30s), we would see a rate of 1.2
+selected (which is absurdly high).  For cases where 0.01 is observed in the
+last 15m, no matter when in that 15m it occurred, only the 15m bucket is considered
+(rate of 0.04).
+
+Similarly, for cases where only 0.02 has been observed in the last 15m, the
+30s-9.5m buckets will report unreasonably high rates, so they will not be
+considered.
+
+Lasttly, for cases where 0.03 has been observed in the last 15m, the 30s-4.5m
+buckets will nt be considered.
 """
 
 import logging
@@ -28,7 +53,7 @@ from weewx.engine import StdService
 # get a logger object
 log = logging.getLogger(__name__)
 
-RAIN24H_VERSION = '0.1'
+RAIN24H_VERSION = '0.11'
 
 if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and sys.version_info[1] < 7):
     raise weewx.UnsupportedFeature(
@@ -50,6 +75,7 @@ class RainRate(StdService):
         super(RainRate, self).__init__(engine, config_dict)
         log.info("Service version is %s." % RAIN24H_VERSION)
 
+        # Only continue if >= the prereq Python version.
         if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and sys.version_info[1] < 7):
             raise Exception("Python 3.7 or later is required for the rainrate plugin.")
 
@@ -62,14 +88,18 @@ class RainRate(StdService):
             log.info("RainRate is disabled. Enable it in the RainRate section of weewx.conf.")
             return
 
+        # List of rain events, including when they "expire" (15m later).
         self.rain_entries : List[RainEntry] = []
+
+        # Flag used to gather up archive records in pre_loop only once (at startup).
         self.initialized = False
-        self.count = 0
 
         self.bind(weewx.PRE_LOOP, self.pre_loop)
         self.bind(weewx.NEW_LOOP_PACKET, self.new_loop)
 
     def pre_loop(self, event):
+        """At WeeWX start, gather up the rain in 15m of archive records and same them
+          in rain_entries."""
         if self.initialized:
             return
         self.initialized = True
@@ -91,7 +121,7 @@ class RainRate(StdService):
             archive_pkts: List[Dict[str, Any]] = RainRate.get_archive_packets(
                 dbm, archive_columns, earliest_time)
 
-            # Save packets as appropriate.
+            # Save rain events (if any).
             pkt_count = 0
             for pkt in archive_pkts:
                 pkt_time = pkt['dateTime']
@@ -104,13 +134,6 @@ class RainRate(StdService):
             # Print problem to log and give up.
             log.error('Error in RainRate setup.  RainRate is exiting. Exception: %s' % e)
             weeutil.logger.log_traceback(log.error, "    ****  ")
-
-    @staticmethod
-    def massage_near_zero(val: float)-> float:
-        if val > -0.0000000001 and val < 0.0000000001:
-            return 0.0
-        else:
-            return val
 
     @staticmethod
     def get_archive_packets(dbm, archive_columns: List[str],
@@ -127,20 +150,26 @@ class RainRate(StdService):
         return packets
 
     def new_loop(self, event):
+        """ Compute rainRate and add/update it in the pkt."""
         pkt: Dict[str, Any] = event.packet
 
         assert event.event_type == weewx.NEW_LOOP_PACKET
         log.debug(pkt)
 
         # Process new packet.
+        # Add rain (if any) to rain_entries, also delete expired entries.
         RainRate.add_packet(pkt, self.rain_entries)
+        # Compute a rainRate and add it to the pkt.
         RainRate.compute_rain_rate(pkt, self.rain_entries)
 
     @staticmethod
     def add_packet(pkt, rain_entries):
-        # Process new packet.
+        """If the pkt contains rain, add a new RainEntry to rain_entries (add to
+        the beginning) and include the timestamp and an expiration (15m later).
+        Also, delete any expired entries in rain_entries."""
+
+        # Process new packet.  Be careful, the first time through, pkt['rain'] may be None.
         pkt_time: int       = to_int(pkt['dateTime'])
-        # Be careful, the first time through, pkt['rain'] may be none.
         if 'rain' in pkt and pkt['rain'] is not None and pkt['rain'] > 0.0:
             pkt_time = pkt['dateTime']
             fifteen_mins_later = pkt_time + 900
@@ -153,50 +182,67 @@ class RainRate(StdService):
 
     @staticmethod
     def compute_rain_buckets(pkt, rain_entries)->List[float]:
+        """ Accumulate rate in 30s buckets (which are cumulative); e.g., for
+            the 9.5m bucket, all rain in the last 9.5m is reflected in it's value."""
         pkt_time = pkt['dateTime']
-        rain_buckets = [ 0.0 ] * 16 # cell 0 will remain 0.0 as we're only calculating 1-15.
+        rain_buckets = [ 0.0 ] * 31 # cell 0 will remain 0.0 as we're only using buckets 1-30.
         for entry in rain_entries:
-            for minute in range(1, 16):
-                if pkt_time - entry.timestamp < minute * 60:
-                    rain_buckets[minute] += entry.amount
+            for bucket in range(1, 31):
+                if pkt_time - entry.timestamp < bucket * 30:
+                    rain_buckets[bucket] += entry.amount
         return rain_buckets
 
     @staticmethod
     def eliminate_buckets(rain_buckets):
-        # Zero out the minute bucket as it is thought it will always be too noisy.
-        rain_buckets[1] = 0.0
+        """ Eliminate (i.e., zero out) any buckets that our algorithm requires us
+            not to consider.  This includes:
+            1. if total rain in the last 15m is 0.01,
+               - the 30s through 14.5m buckets.
+            2. if total rain in the last 15m is 0.02,
+               - the 30s through 9.5m buckets.
+            3. if total rain in the last 15m is 0.03,
+               - the 30s through 4.5m buckets.
+            4. else (total rain in last 15m > 0.03),
+               - the 30s through 1.5m buckets."""
 
-        total_rain = rain_buckets[15]
+        # Zero out the 30s-1.5m (1-3) buckets as it is thought they will always be too noisy.
+        for i in range(1,4):
+            rain_buckets[i] = 0.0
+
+        # The total amount of rain in the last 15m will be reflected in the last (15m) bucket.
+        total_rain = rain_buckets[30]
 
         # Consider low rain cases.
         #
         # If there was just one bucket tip (in the first two minutes), we would see a rate of 0.3
         # selected (which is absurdly high).  As such, we'll only consider the 15m bucket
-        #(rate of 0.04).
+        # (rate of 0.04).
         #
         # Similarly, for cases where only 0.02 has been observed in the last 15m, the
-        # 2-9m buckets will report unreasonably high rates, so zero them out.
+        # 2-9.5m buckets will report unreasonably high rates, so zero them out.
         #
         # Lasttly, for cases where 0.03 has been observed in the last 15m, zero out the
-        # 2-4m buckets.
+        # 2-4.5m buckets.
         if total_rain == 0.01:
-            # Zero everthing but minute 15.
-            for minute in range(2, 15):
-                rain_buckets[minute] = 0.0
+            # Zero everthing but bucket 30.
+            for bucket in range(2, 30):
+                rain_buckets[bucket] = 0.0
         elif total_rain  == 0.02:
-            # Zero minutes 2-9.
-            for minute in range(2, 10):
-                rain_buckets[minute] = 0.0
+            # Zero buckets 2-19.
+            for bucket in range(2, 20):
+                rain_buckets[bucket] = 0.0
         elif total_rain  == 0.03:
-            # Zero minutes 2-4.
-            for minute in range(2, 5):
-                rain_buckets[minute] = 0.0
+            # Zero buckets 2-9.
+            for bucket in range(2, 10):
+                rain_buckets[bucket] = 0.0
 
     @staticmethod
     def compute_rain_rates(rain_buckets)->List[float]:
-        rain_rates = [ 0.0 ] * 16
-        for minute in range(1, 16):
-            rain_rates[minute] = round(3600.0 * rain_buckets[minute] / (minute * 60), 3)
+        """ Rain rates are computed simply by dividing the rain by the time span (and
+        multiplying by the number of seconds in a hour (to get an hourly rate)."""
+        rain_rates = [ 0.0 ] * 31
+        for bucket in range(1, 31):
+            rain_rates[bucket] = round(3600.0 * rain_buckets[bucket] / (bucket * 30), 3)
         return rain_rates
 
     @staticmethod
