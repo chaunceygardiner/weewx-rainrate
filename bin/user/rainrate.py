@@ -28,7 +28,7 @@ from weewx.engine import StdService
 # get a logger object
 log = logging.getLogger(__name__)
 
-RAIN24H_VERSION = '0.02'
+RAIN24H_VERSION = '0.1'
 
 if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and sys.version_info[1] < 7):
     raise weewx.UnsupportedFeature(
@@ -128,57 +128,84 @@ class RainRate(StdService):
 
     def new_loop(self, event):
         pkt: Dict[str, Any] = event.packet
-        pkt_time: int       = to_int(pkt['dateTime'])
 
         assert event.event_type == weewx.NEW_LOOP_PACKET
         log.debug(pkt)
 
         # Process new packet.
+        RainRate.add_packet(pkt, self.rain_entries)
+        RainRate.compute_rain_rate(pkt, self.rain_entries)
+
+    @staticmethod
+    def add_packet(pkt, rain_entries):
+        # Process new packet.
+        pkt_time: int       = to_int(pkt['dateTime'])
         # Be careful, the first time through, pkt['rain'] may be none.
         if 'rain' in pkt and pkt['rain'] is not None and pkt['rain'] > 0.0:
             pkt_time = pkt['dateTime']
             fifteen_mins_later = pkt_time + 900
-            self.rain_entries.insert(0, RainEntry(expiration = fifteen_mins_later, timestamp = pkt_time, amount = pkt['rain']))
+            rain_entries.insert(0, RainEntry(expiration = fifteen_mins_later, timestamp = pkt_time, amount = pkt['rain']))
             log.debug('pkt_time: %d, found rain of %f.' % (pkt_time, pkt['rain']))
 
         # Debit and remove any entries that have matured.
-        while len(self.rain_entries) > 0 and self.rain_entries[-1].expiration <= pkt_time:
-            del self.rain_entries[-1]
+        while len(rain_entries) > 0 and rain_entries[-1].expiration <= pkt_time:
+            del rain_entries[-1]
 
-        # Add/update rainRate in packet
-        # Compute 1-15m rainRates and report the largest rate.
-        rainrates = [ 0.0 ] * 16 # cell 0 will remain 0.0 as we're only calculating 1-15.
-        total_rain = 0.0
-        for entry in self.rain_entries:
-            total_rain += entry.amount
+    @staticmethod
+    def compute_rain_buckets(pkt, rain_entries)->List[float]:
+        pkt_time = pkt['dateTime']
+        rain_buckets = [ 0.0 ] * 16 # cell 0 will remain 0.0 as we're only calculating 1-15.
+        for entry in rain_entries:
             for minute in range(1, 16):
                 if pkt_time - entry.timestamp < minute * 60:
-                    rainrates[minute] += entry.amount
-        for minute in range(1, 16):
-            rainrates[minute] = round(3600.0 * rainrates[minute] / (minute * 60), 2)
+                    rain_buckets[minute] += entry.amount
+        return rain_buckets
 
-        # Before taking the max of the computed 1-15m rain rates, consider low rain cases.
-        # If there was just one bucket tip (in the first minute), we would see a rate of 0.6
+    @staticmethod
+    def eliminate_buckets(rain_buckets):
+        # Zero out the minute bucket as it is thought it will always be too noisy.
+        rain_buckets[1] = 0.0
+
+        total_rain = rain_buckets[15]
+
+        # Consider low rain cases.
+        #
+        # If there was just one bucket tip (in the first two minutes), we would see a rate of 0.3
         # selected (which is absurdly high).  As such, we'll only consider the 15m bucket
         #(rate of 0.04).
         #
         # Similarly, for cases where only 0.02 has been observed in the last 15m, the
-        # 1-9m buckets will report unreasonably high rates, so zero them out.
+        # 2-9m buckets will report unreasonably high rates, so zero them out.
         #
         # Lasttly, for cases where 0.03 has been observed in the last 15m, zero out the
-        # 1-4m buckets.
+        # 2-4m buckets.
         if total_rain == 0.01:
             # Zero everthing but minute 15.
-            for minute in range(1, 15):
-                rainrates[minute] = 0.0
+            for minute in range(2, 15):
+                rain_buckets[minute] = 0.0
         elif total_rain  == 0.02:
-            # Zero minutes 1-9.
-            for minute in range(1, 10):
-                rainrates[minute] = 0.0
+            # Zero minutes 2-9.
+            for minute in range(2, 10):
+                rain_buckets[minute] = 0.0
         elif total_rain  == 0.03:
-            # Zero minutes 1-4.
-            for minute in range(1, 5):
-                rainrates[minute] = 0.0
+            # Zero minutes 2-4.
+            for minute in range(2, 5):
+                rain_buckets[minute] = 0.0
+
+    @staticmethod
+    def compute_rain_rates(rain_buckets)->List[float]:
+        rain_rates = [ 0.0 ] * 16
+        for minute in range(1, 16):
+            rain_rates[minute] = round(3600.0 * rain_buckets[minute] / (minute * 60), 3)
+        return rain_rates
+
+    @staticmethod
+    def compute_rain_rate(pkt, rain_entries):
+        """Add/update rainRate in packet"""
+
+        rain_buckets = RainRate.compute_rain_buckets(pkt, rain_entries)
+        RainRate.eliminate_buckets(rain_buckets)
+        rainrates = RainRate.compute_rain_rates(rain_buckets)
 
         pkt['rainRate'] = max(rainrates)
         log.debug('new_loop(%d): raterates: %r' % (pkt['dateTime'], rainrates))
