@@ -229,6 +229,105 @@ class RainRateTests(unittest.TestCase):
         user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
         self.assertEqual(pkt['rainRate'], 0.96)
 
+    def test_compute_rain_rate2(self):
+        rain_entries = []
+        ts = 1668104200
+
+        # A 0.02 in one pkt.
+        pkt = { 'dateTime': ts, 'rain': 0.02, 'rainRate': 0.0 }
+        user.rainrate.RainRate.add_packet(pkt, rain_entries)
+        user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
+        self.assertEqual(pkt['rainRate'], 0.12)
+
+        # Another tip 0.02 2s later.
+        ts += 2
+        pkt = { 'dateTime': ts, 'rain': 0.02, 'rainRate': 18.0 }
+        user.rainrate.RainRate.add_packet(pkt, rain_entries)
+        user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
+        self.assertEqual(pkt['rainRate'], 1.2)
+
+        # No rain for 4:56
+        for _ in range(148):
+            ts += 2
+            pkt = { 'dateTime': ts, 'rain': 0.0, 'rainRate': 18.0 }
+            user.rainrate.RainRate.add_packet(pkt, rain_entries)
+        # 0.04 over 5m
+        user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
+        self.assertEqual(pkt['rainRate'], 0.48)
+
+        # No rain for 5:00
+        for _ in range(150):
+            ts += 2
+            pkt = { 'dateTime': ts, 'rain': 0.0, 'rainRate': 18.0 }
+            user.rainrate.RainRate.add_packet(pkt, rain_entries)
+        # 0.04 over 10m
+        user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
+        self.assertEqual(pkt['rainRate'], 0.24)
+
+        # No rain for 5:00
+        for _ in range(150):
+            ts += 2
+            pkt = { 'dateTime': ts, 'rain': 0.0, 'rainRate': 18.0 }
+            user.rainrate.RainRate.add_packet(pkt, rain_entries)
+        # 0.04 over 15m
+        user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
+        self.assertEqual(pkt['rainRate'], 0.16)
+
+    def test_compute_rain_rate_50_percent(self):
+        rain_entries = []
+        ts = 1668104200
+
+        # Every other pkt has rain.  That's 1800 pkts per hour with 900 having .01 rain.
+        # Expect 900 * 0.01 = 9 inches per hour
+        ctr = 0
+        for _ in range(1000):
+            pkt = { 'dateTime': ts, 'rain': 0.0, 'rainRate': 0.0 }
+            if ctr % 2 == 0:
+                pkt['rain'] = 0.01
+            ctr += 1
+            user.rainrate.RainRate.add_packet(pkt, rain_entries)
+            ts += 2
+
+        self.assertEqual(len(rain_entries), 225)
+        user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
+        self.assertEqual(pkt['rainRate'], 9.0)
+
+    def test_compute_rain_rate_one_in_15(self):
+        rain_entries = []
+        ts = 1668104200
+
+        ctr = 0
+        for _ in range(1000):
+            pkt = { 'dateTime': ts, 'rain': 0.0, 'rainRate': 0.0 }
+            if ctr % 15 == 0:
+                pkt['rain'] = 0.01
+            ctr += 1
+            user.rainrate.RainRate.add_packet(pkt, rain_entries)
+            ts += 2
+
+        self.assertEqual(len(rain_entries), 30)
+        user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
+        self.assertEqual(pkt['rainRate'], 1.2)
+
+    def test_compute_rain_rate_one_in_45(self):
+        rain_entries = []
+        ts = 1668104200
+
+        ctr = 0
+        for _ in range(1000):
+            pkt = { 'dateTime': ts, 'rain': 0.0, 'rainRate': 0.0 }
+            if ctr % 45 == 0:
+                pkt['rain'] = 0.01
+            ctr += 1
+            user.rainrate.RainRate.add_packet(pkt, rain_entries)
+            ts += 2
+
+        self.assertEqual(len(rain_entries), 10)
+        # One would expect 0.4, but 2 tips are sitting in the 2m bucket.
+        # 3600 * 0.03 / 120 = 0.6
+        user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
+        self.assertEqual(pkt['rainRate'], 0.6)
+
 
 if __name__ == '__main__':
     unittest.main()
