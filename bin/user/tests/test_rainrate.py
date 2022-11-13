@@ -328,6 +328,28 @@ class RainRateTests(unittest.TestCase):
         user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
         self.assertEqual(pkt['rainRate'], 0.6)
 
+    def test_2022_11_rain_event(self):
+        """
+        "2022-11-06 01:05:00",1667696700,0.01,0.0
+        ...
+        "2022-11-09 22:40:00",1668033600,0.01,0.0
+        """
+        rain_entries = []
+        infile = open('bin/user/tests/2022-11-rain-event.csv', 'r')
+        lines = infile.readlines()
+        highRainRate = 0.0
+        for line in lines:
+            cols = line.split(',')
+            ts       = int(cols[1])
+            rain     = float(cols[2])
+            rainRate = float(cols[3])
+            pkt = { 'dateTime': ts, 'rain': rain, 'rainRate': rainRate }
+            user.rainrate.RainRate.add_packet(pkt, rain_entries)
+            user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
+            if pkt['rainRate'] > highRainRate:
+                highRainRate = pkt['rainRate']
+        self.assertEqual(highRainRate, 1.2)
+
 
 if __name__ == '__main__':
     unittest.main()
