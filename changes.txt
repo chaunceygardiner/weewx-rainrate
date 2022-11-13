@@ -1,6 +1,10 @@
 weewx-rainrate change history
 -----------------------------
 
+0.12 Release 2022/11/??
+-----------------------
+Min timespan to average now 3m (was 2m).
+
 0.11 Release 2022/11/11
 -----------------------
 1. Move to 30s increments, from 1 min. increments, for more responsive rain rate.
