@@ -91,6 +91,26 @@ the 5m-15m buckets are considered.
 weewx-rainrate code includes type annotation which do not work with Python 2, nor in
 earlier versions of Python 3.
 
+# Installation Instructions
+
+1. Download the lastest release, weewx-rainrate-0.12.zip, from the
+   [GitHub Repository](https://github.com/chaunceygardiner/weewx-rainrate).
+
+1. Run the following command.
+
+   `sudo /home/weewx/bin/wee_extension --install weewx-rainrate-0.12.zip`
+
+   Note: this command assumes weewx is installed in /home/weewx.  If it's installed
+   elsewhere, adjust the path of wee_extension accordingly.
+
+1. Restart WeeWX.
+
+1. The following entry is created in `weewx.conf`.  To disable `weewx-rainrate` without
+   uninstalling it, change the enable line to false.
+```
+[RainRate]
+    enable = true
+```
 
 ## Licensing
 
