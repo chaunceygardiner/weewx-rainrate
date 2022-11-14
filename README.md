@@ -86,11 +86,6 @@ the 10m through 15m buckets are considered.
 Lasttly, for cases where 0.03 has been observed in the last 15m, only
 the 5m-15m buckets are considered.
 
-## Why require Python 3.7 or later?
-
-weewx-rainrate code includes type annotation which do not work with Python 2, nor in
-earlier versions of Python 3.
-
 # Installation Instructions
 
 1. Download the lastest release, weewx-rainrate-0.12.zip, from the
@@ -111,6 +106,11 @@ earlier versions of Python 3.
 [RainRate]
     enable = true
 ```
+
+## Why require Python 3.7 or later?
+
+weewx-rainrate code includes type annotation which do not work with Python 2, nor in
+earlier versions of Python 3.
 
 ## Licensing
 
