@@ -42,14 +42,14 @@ Rain rates are rounded to three decimals.
 0.01 rain  6:31m ago.
 0.01 rain 14:10m ago.
 
-The following table is computed and a 0.3 rainrate will be
-reported (the highest rate is the 0:00-4:00m period).
+The following table is computed and a 0.343 rainrate will be
+reported (the highest rate is the 0:00-3:30m bucket).
 
 | Bucket             | Timespan |    Rain     |  Rate/hr. |
 |--------------------|---------:|------------:|----------:|
 |  0:00m -  3:00m    |     180s |        0.01 |     0.200 |
-|  0:00m -  3:30m    |     210s |        0.02 |     0.343 |
-| __0:00m -  4:00m__ |  __240s__|     __0.02__|  __0.300__|
+| __0:00m -  3:30m__ |  __210s__|     __0.02__|  __0.343__|
+|   0:00m -  4:00m   |     240s |        0.02 |     0.300 |
 |   0:00m -  4:30m   |     270s |        0.02 |     0.267 |
 |   0:00m -  5:00m   |     300s |        0.02 |     0.240 |
 |   0:00m -  5:30m   |     330s |        0.02 |     0.218 |
