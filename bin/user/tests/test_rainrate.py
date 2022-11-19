@@ -68,7 +68,7 @@ class RainRateTests(unittest.TestCase):
             user.rainrate.RainRate.add_packet(pkt, rain_entries)
             ts += 2
         rain_buckets = user.rainrate.RainRate.compute_rain_buckets(pkt, rain_entries)
-        self.assertEqual(rain_buckets, [ 0.0 ] * 31)
+        self.assertEqual(rain_buckets, [ 0.0 ] * 16)
 
         # Add 1000 pkts of 0.01 rain.
         for i in range(1000):
@@ -77,8 +77,8 @@ class RainRateTests(unittest.TestCase):
             ts += 2
 
         rain_buckets = user.rainrate.RainRate.compute_rain_buckets(pkt, rain_entries)
-        correct_buckets = [ 0.0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1.05, 1.2, 1.35, 1.5, 1.65, 1.8, 1.95,
-            2.1, 2.25, 2.4, 2.55, 2.7, 2.85, 3.0, 3.15, 3.3, 3.45, 3.6, 3.75, 3.9, 4.05, 4.2, 4.35, 4.5 ]
+        correct_buckets = [ 0.0, 0.3, 0.6, 0.9, 1.2, 1.5, 1.8,
+            2.1, 2.4, 2.7, 3.0, 3.3, 3.6, 3.9, 4.2, 4.5 ]
         self.assertEqual(len(rain_buckets), len(correct_buckets))
         for i in range(len(rain_buckets)):
             self.assertAlmostEqual(rain_buckets[i], correct_buckets[i], 7, 'index: %d' % i)
@@ -96,30 +96,18 @@ class RainRateTests(unittest.TestCase):
         user.rainrate.RainRate.eliminate_buckets(rain_buckets)
         self.assertEqual(rain_buckets[1], 0.0)
         self.assertEqual(rain_buckets[2], 0.0)
+        self.assertEqual(rain_buckets[3], 0.0)
 
         # Advance ts to clear out entries
         ts += 900
 
-        # Add a single 0.01 pkt.  All buckets, except 30, should be zeroed.
+        # Add a single 0.01 pkt.  All buckets, except 15, should be zeroed.
         pkt = { 'dateTime': ts, 'rain': 0.01, 'rainRate': 0.0 }
         user.rainrate.RainRate.add_packet(pkt, rain_entries)
         ts += 2
         rain_buckets = user.rainrate.RainRate.compute_rain_buckets(pkt, rain_entries)
         user.rainrate.RainRate.eliminate_buckets(rain_buckets)
-        correct_buckets = [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.00,
-            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.01 ]
-        self.assertEqual(len(rain_buckets), len(correct_buckets))
-        for i in range(len(rain_buckets)):
-            self.assertAlmostEqual(rain_buckets[i], correct_buckets[i], 7, 'index: %d' % i)
-
-        # Add another 0.01 pkt.  Buckets 1-19 should be zero.
-        pkt = { 'dateTime': ts, 'rain': 0.01, 'rainRate': 0.0 }
-        user.rainrate.RainRate.add_packet(pkt, rain_entries)
-        ts += 2
-        rain_buckets = user.rainrate.RainRate.compute_rain_buckets(pkt, rain_entries)
-        user.rainrate.RainRate.eliminate_buckets(rain_buckets)
-        correct_buckets = [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-            0.0, 0.0, 0.0, 0.0, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02 ]
+        correct_buckets = [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.01 ]
         self.assertEqual(len(rain_buckets), len(correct_buckets))
         for i in range(len(rain_buckets)):
             self.assertAlmostEqual(rain_buckets[i], correct_buckets[i], 7, 'index: %d' % i)
@@ -130,20 +118,29 @@ class RainRateTests(unittest.TestCase):
         ts += 2
         rain_buckets = user.rainrate.RainRate.compute_rain_buckets(pkt, rain_entries)
         user.rainrate.RainRate.eliminate_buckets(rain_buckets)
-        correct_buckets = [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03,
-            0.03, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03 ]
+        correct_buckets = [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02 ]
         self.assertEqual(len(rain_buckets), len(correct_buckets))
         for i in range(len(rain_buckets)):
             self.assertAlmostEqual(rain_buckets[i], correct_buckets[i], 7, 'index: %d' % i)
 
-        # Add another 0.01 pkt.  Buckets 1-2 should be zero.
+        # Add another 0.01 pkt.  Buckets 1-4 should be zero.
         pkt = { 'dateTime': ts, 'rain': 0.01, 'rainRate': 0.0 }
         user.rainrate.RainRate.add_packet(pkt, rain_entries)
         ts += 2
         rain_buckets = user.rainrate.RainRate.compute_rain_buckets(pkt, rain_entries)
         user.rainrate.RainRate.eliminate_buckets(rain_buckets)
-        correct_buckets = [ 0.0, 0.0, 0.0, 0.00, 0.00, 0.00, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04,
-            0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04 ]
+        correct_buckets = [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03 ]
+        self.assertEqual(len(rain_buckets), len(correct_buckets))
+        for i in range(len(rain_buckets)):
+            self.assertAlmostEqual(rain_buckets[i], correct_buckets[i], 7, 'index: %d' % i)
+
+        # Add another 0.01 pkt.  Buckets 1-3 should be zero.
+        pkt = { 'dateTime': ts, 'rain': 0.01, 'rainRate': 0.0 }
+        user.rainrate.RainRate.add_packet(pkt, rain_entries)
+        ts += 2
+        rain_buckets = user.rainrate.RainRate.compute_rain_buckets(pkt, rain_entries)
+        user.rainrate.RainRate.eliminate_buckets(rain_buckets)
+        correct_buckets = [ 0.0, 0.0, 0.0, 0.0, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04 ]
         self.assertEqual(len(rain_buckets), len(correct_buckets))
         for i in range(len(rain_buckets)):
             self.assertAlmostEqual(rain_buckets[i], correct_buckets[i], 7, 'index: %d' % i)
@@ -159,8 +156,7 @@ class RainRateTests(unittest.TestCase):
         rain_buckets = user.rainrate.RainRate.compute_rain_buckets(pkt, rain_entries)
         user.rainrate.RainRate.eliminate_buckets(rain_buckets)
         rain_rates = user.rainrate.RainRate.compute_rain_rates(rain_buckets)
-        self.assertEqual(rain_rates, [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.04])
+        self.assertEqual(rain_rates, [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.04])
 
         # Add one pkt of 0.01 rain.
         pkt = { 'dateTime': ts, 'rain': 0.01, 'rainRate': 0.0 }
@@ -169,10 +165,9 @@ class RainRateTests(unittest.TestCase):
         rain_buckets = user.rainrate.RainRate.compute_rain_buckets(pkt, rain_entries)
         user.rainrate.RainRate.eliminate_buckets(rain_buckets)
         rain_rates = user.rainrate.RainRate.compute_rain_rates(rain_buckets)
-        self.assertEqual(rain_rates, [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-            0.0, 0.0, 0.0, 0.0, 0.12, 0.114, 0.109, 0.104, 0.1, 0.096, 0.092, 0.089, 0.086, 0.083, 0.08])
+        self.assertEqual(rain_rates, [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.12, 0.109, 0.1, 0.092, 0.086, 0.08])
 
-        # Add 360 pkts of no rain.  The two rain pkts should now be sitting in the 7-1/2 minute.
+        # Add 360 pkts of no rain.  The two rain pkts should now be sitting in the 8 minute.
         for _ in range(400):
             pkt = { 'dateTime': ts, 'rain': 0.00, 'rainRate': 0.0 }
             user.rainrate.RainRate.add_packet(pkt, rain_entries)
@@ -180,20 +175,23 @@ class RainRateTests(unittest.TestCase):
         rain_buckets = user.rainrate.RainRate.compute_rain_buckets(pkt, rain_entries)
         user.rainrate.RainRate.eliminate_buckets(rain_buckets)
         rain_rates = user.rainrate.RainRate.compute_rain_rates(rain_buckets)
-        self.assertEqual(rain_rates, [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.089, 0.086, 0.083, 0.08])
+        self.assertEqual(rain_rates, [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.086, 0.08])
 
     def test_compute_rain_rate(self):
         rain_entries = []
         ts = 1668104200
 
         # A single tip. 0.01 over 15m
+        #    0
+        # 0.01
         pkt = { 'dateTime': ts, 'rain': 0.01, 'rainRate': 0.0 }
         user.rainrate.RainRate.add_packet(pkt, rain_entries)
         user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
         self.assertEqual(pkt['rainRate'], 0.04)
 
         # Another tip 2s later.  0.02 over 10m
+        #    0    2
+        # 0.01 0.01
         ts += 2
         pkt = { 'dateTime': ts, 'rain': 0.01, 'rainRate': 18.0 }
         user.rainrate.RainRate.add_packet(pkt, rain_entries)
@@ -201,33 +199,41 @@ class RainRateTests(unittest.TestCase):
         self.assertEqual(pkt['rainRate'], 0.12)
 
         # Another tip 2s later.  0.03 over 5m
+        #    0    2    4
+        # 0.01 0.01 0.01
         ts += 2
         pkt = { 'dateTime': 1668104204, 'rain': 0.01, 'rainRate': 18.0 }
         user.rainrate.RainRate.add_packet(pkt, rain_entries)
         user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
         self.assertEqual(pkt['rainRate'], 0.36)
 
-        # Another tip 2s later.  0.04 over 2m
+        # Another tip 2s later.  0.04 over 4m
+        #    0    2    4    6
+        # 0.01 0.01 0.01 0.01
         ts += 2
         pkt = { 'dateTime': ts, 'rain': 0.01, 'rainRate': 18.0 }
         user.rainrate.RainRate.add_packet(pkt, rain_entries)
         user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
-        self.assertEqual(pkt['rainRate'], 0.8)
+        self.assertEqual(pkt['rainRate'], 0.6)
 
-        # No tip for 112s, still in 2m band, no change in rainRate.
-        for i in range(0, 112, 2):
+        # No tip for 112s, still in 4m band, no change in rainRate.
+        #  112  114  116  118
+        # 0.01 0.01 0.01 0.01
+        for _ in range(0, 112, 2):
             ts += 2
             pkt = { 'dateTime': ts, 'rain': 0.00, 'rainRate': 99.9 }
             user.rainrate.RainRate.add_packet(pkt, rain_entries)
             user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
-            self.assertEqual(pkt['rainRate'], 0.8)
+            self.assertEqual(pkt['rainRate'], 0.6)
 
-        # Another tip 2s later. 0.03 over 2m = 0.9, 0.04 over 2.5m = 0.96, 0.04 over 3m = 0.8
+        # Another tip 2s later. 0.05 over 4m = 0.75
+        #    0  114  116  118  120
+        # 0.01 0.01 0.01 0.01 0.01
         ts += 2
-        pkt = { 'dateTime': ts, 'rain': 0.00, 'rainRate': 99.9 }
+        pkt = { 'dateTime': ts, 'rain': 0.01, 'rainRate': 99.9 }
         user.rainrate.RainRate.add_packet(pkt, rain_entries)
         user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
-        self.assertEqual(pkt['rainRate'], 0.8)
+        self.assertEqual(pkt['rainRate'], 0.75)
 
     def test_compute_rain_rate2(self):
         rain_entries = []
@@ -244,7 +250,7 @@ class RainRateTests(unittest.TestCase):
         pkt = { 'dateTime': ts, 'rain': 0.02, 'rainRate': 18.0 }
         user.rainrate.RainRate.add_packet(pkt, rain_entries)
         user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
-        self.assertEqual(pkt['rainRate'], 0.8)
+        self.assertEqual(pkt['rainRate'], 0.6)
 
         # No rain for 4:56
         for _ in range(148):
@@ -323,10 +329,12 @@ class RainRateTests(unittest.TestCase):
             ts += 2
 
         self.assertEqual(len(rain_entries), 10)
-        # One would expect 0.4, but 2 tips are sitting in the 2m bucket.
-        # 3600 * 0.03 / 120 = 0.6
+        # 0.03 will be in the 4m bucket.
+        # 3600 * 0.03 / 120 = 0.45
+        # 0.04 will be in the 5m bucket.
+        # 3600 * 0.04 / 300 = 0.48
         user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
-        self.assertEqual(pkt['rainRate'], 0.514)
+        self.assertEqual(pkt['rainRate'], 0.48)
 
     def test_2022_11_rain_event(self):
         """
@@ -349,7 +357,7 @@ class RainRateTests(unittest.TestCase):
             user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
             if pkt['rainRate'] > highRainRate:
                 highRainRate = pkt['rainRate']
-        self.assertEqual(highRainRate, 0.873)
+        self.assertEqual(highRainRate, 0.8)
 
 
 if __name__ == '__main__':

@@ -1,7 +1,18 @@
 weewx-rainrate change history
 -----------------------------
 
-0.12 Release 2022/11/??
+0.13 Release 2022/11/18
+-----------------------
+Min timespan to average now 4m (was 3m).
+Buckets are now (back to) 1m (rather than 30s).
+Both of these changes were made after considering the paper,
+Estimating Rain Rates from Tipping-Bucket Rain Gauge Measurements,
+at https://ntrs.nasa.gov/api/citations/20070016690/downloads/20070016690.pdf
+"One-minute rain rates suffer substantial errors, especially at low rain rates.
+When one-minute rain rates are averaged to 4 -7 minute scales, the errors
+dramatically reduce."
+
+0.12 Release 2022/11/13
 -----------------------
 Min timespan to average now 3m (was 2m).
 
