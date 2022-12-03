@@ -78,23 +78,20 @@ reported (the highest rate is the 0:00-4:00m bucket).
 
 For low rain cases (< 0.04 in last 15m):
 
-For cases where 0.01 is observed in the last 15m, no matter when in that 15m
-the tip occurred, only the 15m bucket is considered (hence, a rate of 0.04).
-
-Similarly, for cases where only 0.02 has been observed in the last 15m, only
-the 10m through 15m buckets are considered.
+For cases where 0.01 or 0.02 is observed in the last 15m, no matter when in that 15m
+the tip occurred, only the 15m bucket is considered (hence, a rate of 0.04/0.08).
 
 Lasttly, for cases where 0.03 has been observed in the last 15m, only
-the 5m-15m buckets are considered.
+the 10m-15m buckets are considered.
 
 # Installation Instructions
 
-1. Download the lastest release, weewx-rainrate-0.13.zip, from the
+1. Download the lastest release, weewx-rainrate-0.14.zip, from the
    [GitHub Repository](https://github.com/chaunceygardiner/weewx-rainrate).
 
 1. Run the following command.
 
-   `sudo /home/weewx/bin/wee_extension --install weewx-rainrate-0.12.zip`
+   `sudo /home/weewx/bin/wee_extension --install weewx-rainrate-0.14.zip`
 
    Note: this command assumes weewx is installed in /home/weewx.  If it's installed
    elsewhere, adjust the path of wee_extension accordingly.

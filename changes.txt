@@ -1,6 +1,14 @@
 weewx-rainrate change history
 -----------------------------
 
+0.14 Release 2022/11/18
+-----------------------
+Now tested against a significant storm and against a quality non-siphon
+tipping bucket (HyQuest Solutions TB7).  Tweaked so that the TB3 (siphone)
+resembles the TB7.  Changes are: only use 15 average if 0.01 or 0.02 fell
+within last 15m.  Only consider 10 through 15m buckets when 0.03 has
+fallen in the last 15m.
+
 0.13 Release 2022/11/18
 -----------------------
 Min timespan to average now 4m (was 3m).

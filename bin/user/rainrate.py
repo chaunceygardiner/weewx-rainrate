@@ -29,17 +29,13 @@ by overwriting/inserting rainRate to be the max of the
 
 For low rain cases:
 
-If there was just one bucket tip (in the first 60s), we would see a rate of 0.6
-per hour selected (which is absurdly high).  For cases where 0.01 is observed in the
-last 15m, no matter when in that 15m it occurred, only the 15m bucket is considered
-(rate of 0.04).
+If there was just one or two bucket tips (in the first 60s), we would see a rate of 0.6
+or 1.2 per hour selected (which is absurdly high).  For cases where 0.01 or 0.02 is observed
+in the last 15m, no matter when in that 15m it occurred, only the 15m bucket is considered
+(rate of 0.04 or 0.08).
 
-Similarly, for cases where only 0.02 has been observed in the last 15m, the
-1-9m buckets will report unreasonably high rates, so they will not be
-considered.
-
-Lasttly, for cases where 0.03 has been observed in the last 15m, the 1m-4m
-buckets will not be considered.
+Lastly, for cases where 0.03 has been observed in the last 15m, only the 10m
+and up buckets will be considered.
 """
 
 import logging
@@ -62,7 +58,7 @@ from weewx.engine import StdService
 # get a logger object
 log = logging.getLogger(__name__)
 
-RAIN24H_VERSION = '0.13'
+RAIN24H_VERSION = '0.14'
 
 if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and sys.version_info[1] < 7):
     raise weewx.UnsupportedFeature(
@@ -208,12 +204,10 @@ class RainRate(StdService):
         """ Eliminate (i.e., zero out) any buckets that our algorithm requires us
             not to consider.  This includes:
             1. Always eliminate the 1m through 4m buckets (inclusive).
-            2. If total rain in the last 15m is 0.01,
+            2. If total rain in the last 15m < 0.03,
                - Eliminate buckets up to and including 14m.
-            3. If total rain in the last 15m is 0.02,
-               - Eliminate buckets up to and including 9m.
-            4. If total rain in the last 15m is 0.03,
-               - Eliminate buckets up to and including 4m."""
+            3. If total rain in the last 15m < 0.04,
+               - Eliminate buckets up to and including 9m."""
 
         # Always zero out buckets 1-3 as they are too noisy.
         for i in range(1,4):
@@ -228,22 +222,19 @@ class RainRate(StdService):
         # selected (which is absurdly high).  As such, we'll only consider the 15m bucket
         # (rate of 0.04).
         #
-        # Similarly, for cases where only 0.02 has been observed in the last 15m, the
-        # 1-9m buckets will report unreasonably high rates, so zero them out.
+        # Similarly, for cases where only 0.02 has been observed in the last 15m, only
+        # the 15m bucket will be considered.
         #
         # Lasttly, for cases where 0.03 has been observed in the last 15m, zero out the
-        # 1-4m buckets.
-        if total_rain == 0.01:
+        # 1-9m buckets.
+        if total_rain < 0.03:
             # Zero everthing but bucket 15.
             for bucket in range(4, 15):
                 rain_buckets[bucket] = 0.0
-        elif total_rain  == 0.02:
-            # Zero buckets 4-10.
+        elif total_rain  < 0.04:
+            # Zero buckets 4 - 9.
             for bucket in range(4, 10):
                 rain_buckets[bucket] = 0.0
-        elif total_rain  == 0.03:
-            # Zero bucket 4.
-            rain_buckets[4] = 0.0
 
     @staticmethod
     def compute_rain_rates(rain_buckets)->List[float]:
