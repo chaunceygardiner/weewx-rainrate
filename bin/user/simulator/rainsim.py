@@ -8,7 +8,7 @@
 
     To Run:
 
-        PYTHONPATH=/home/weewx/bin python bin/user/simulator/rainsim.py bin/user/simulator/tb3_observations.csv
+        PYTHONPATH=/home/weewx/bin python bin/user/simulator/rainsim.py bin/user/simulator/2022Dec01_PaloAlto_0.68inch_storm_TB3.csv
 
     Example output:
 Time                                 Rain  Orig. Rate Comp. Rate
@@ -109,9 +109,8 @@ class RainSim():
         f = open(rainfile, "r")
         lines = f.readlines()
         for line in lines:
-            # Dec  1 10:41:54 judygirldog64 weewx[351721] INFO user.rainrate: rain event: 1669920114,0.0,15.16
-            parts = line.split('rain event: ')
-            cols = parts[1].split(',')
+            # 1669920114,0.0,15.16
+            cols = line.split(',')
             rain_events.append(RainEvent(
                 timestamp = int(cols[0]),
                 rain      = float(cols[1]),
