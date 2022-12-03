@@ -37,6 +37,21 @@ weewx-rainrate ignores the rainRate in the loop packet (if present)
 by overwriting/inserting rainRate to be the max of the
 4 through 15m rain rate (in 30s increments)  as computed by the extension.
 
+## Visualization
+
+The following graphs show the rain rate over the period of a 0.68" storm in Palo Alto, CA on December 1, 2022.
+The blue lines are the untouched rates of a HyQuest TB7 tipping bucket, which does not have
+a siphon and, as such, is provided as a reference.
+
+The red line shows the rain rate from a HyQuest TB3 tipping bucket, which does have a siphon and, as such,
+suffers from multiple tips in close proximity.  The left graph shows the untouched rate of the TB3.  As one
+can see, nonsensical rates of up to 15" per hour are shown.
+
+On the right, this rainrate extension is used. The TB3 shows rain rates that track reasonably well with the TB7.
+
+![Without extension on left, with extension on right.](OrigAndAdj.png)
+Reference TB7 in blue.  TB3 (red) on left without extension, on right with this extension.
+
 ## Algorithm
 
 Based on [Estimating Rain Rates from Tipping-Bucket Rain Gauge Measurements](https://ntrs.nasa.gov/api/citations/20070016690/downloads/20070016690.pdf)
@@ -53,21 +68,6 @@ Please not that this extension never manufactures a rain rate out of thin air.  
 for which to report the rate.  That interval may be between 4 and 15 minutes, but whichever interval
 is chosen, this extension reports the hourly rain rate as computed by the formula
 `3600 * volume-of-rain-in-the-interval / number-of-seconds-in-the-interval`.
-
-## Visualization
-
-The following graphs show the rain rate over the period of a 0.68" storm in Palo Alto, CA on December 1, 2022.
-The blue lines are the untouched rates of a HyQuest TB7 tipping bucket, which does not have
-a siphon and, as such, is provided as a reference.
-
-The red line shows the rain rate from a HyQuest TB3 tipping bucket, which does have a siphon and, as such,
-suffers from multiple tips in close proximity.  The left graph shows the untouched rate of the TB3.  As one
-can see, nonsensical rates of up to 15" per hour are shown.
-
-On the right, this rainrate extension is used. The TB3 shows rain rates that track reasonably well with the TB7.
-
-![Without extension on left, with extension on right.](OrigAndAdj.png)
-Reference TB7 in blue.  TB3 (red) on left without extension, on right with this extension.
 
 ### Example
 
