@@ -49,6 +49,11 @@ For cases where at least 0.04 (4 tips) of rain have occurred in the last
 is computed for each, and the largest rate is chosen.  Rain rates are
 rounded to three decimals.
 
+Please not that this extension never manufactures a rain rate out of thin air.  It simply chooses the interval
+for which to report the rate.  That interval may be between 4 and 15 minutes, but whichever interval
+is chosen, this extension reports the hourly rain rate as computed by the formula
+`3600 * volume-of-rain-in-the-interval / number-of-seconds-in-the-interval`.
+
 ## Visualization
 
 The following graphs show the rain rate over the period of a 0.68" storm in Palo Alto, CA on December 1, 2022.
