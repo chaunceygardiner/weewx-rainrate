@@ -49,6 +49,27 @@ For cases where at least 0.04 (4 tips) of rain have occurred in the last
 is computed for each, and the largest rate is chosen.  Rain rates are
 rounded to three decimals.
 
+## Visualization
+
+The following graphs show the rain rate over the period of a storm in Palo Alto, CA on December 1, 2022.
+The blue lines in each graph are the untouched rates of a HyQuest TB7 tipping bucket, which does not have
+a siphon and, as such, is provided as a reference.
+
+The red line shows the rain rate from a HyQuest TB3 tipping bucket, which does have a siphon and, as such,
+suffers from multiple tips in close proximity.  The first graph shows the untouched rate.  As you can see,
+rates of up to 15" per hour are shown.
+
+In the second graph, this rainrate extension is used. As you can see, it provides rain rates that
+reasonably approximate the TB7 reference rate. 
+
+TB3 Siphon Tipping Bucket (in red) __without__ this rainrate extension compared to reference TB7 (in blue).
+
+![TB3(in red) WITHOUT this extension.](rainrate_before.png)
+
+TB3 Siphon Tipping Bucket (in red) __with__ this rainrate extension compared to reference TB7 (in blue).
+
+![TB3(in red) WITH this extension.](rainrate_after.png)
+
 ### Example
 
 0.01 rain    43s ago.
