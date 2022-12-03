@@ -89,9 +89,9 @@ reported (the highest rate is the 0:00-4:00m bucket).
 |   0:00m - 14:00m   |     840s |        0.03 |     0.129 |
 |   0:00m - 15:00m   |     900s |        0.04 |     0.160 |
 
-## Algorithm for Smaller Volumes of Rain
+## Algorithm for Low Numbers of Bucket Tips
 
-For low rain cases (< 0.04 in last 15m):
+For low bucket tip cases (< 0.04 in last 15m):
 
 For cases where 0.01 or 0.02 is observed in the last 15m, no matter when in that 15m
 the tip occurred, only the 15m bucket is considered (hence, a rate of 0.04/0.08).
