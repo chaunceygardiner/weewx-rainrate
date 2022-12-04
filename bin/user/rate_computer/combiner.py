@@ -40,8 +40,9 @@
 
 """
 
-import sys
 import datetime
+import os
+import sys
 
 from dataclasses import dataclass
 from typing import List
@@ -64,6 +65,7 @@ class Combiner():
             rain_events.append(RainEvent(
                 timestamp = int(cols[0]),
                 rainRate  = float(cols[1])))
+        f.close()
         return rain_events
 
 
@@ -71,11 +73,14 @@ if __name__ == '__main__':
     if len(sys.argv) != 3:
         print('usage %s <tb3_csv> <tb7_csv>')
         sys.exit(1)
-    tb3 = Combiner.read_rain_events(sys.argv[1])
-    tb7 = Combiner.read_rain_events(sys.argv[2])
+    tb3_filename = sys.argv[1]
+    tb7_filename = sys.argv[2]
+    tb3 = Combiner.read_rain_events(tb3_filename)
+    tb7 = Combiner.read_rain_events(tb7_filename)
     ts = min(tb3[0].timestamp, tb7[0].timestamp)
     i3 = 0
     i7 = 0
+    print('Time,%s,%s' % (os.path.basename(tb3_filename).split('.')[0], os.path.basename(tb7_filename).split('.')[0]))
     while i3 < len(tb3) or i7 < len(tb7):
         if i3 != 0 and i3 < len(tb3) and tb3[i3 - 1].timestamp == tb3[i3].timestamp:
             # dup tb3 timestamp
@@ -99,12 +104,12 @@ if __name__ == '__main__':
             print('%s,%5.3f,%5.3f' % (datetime.datetime.fromtimestamp(ts).strftime('%m/%d/%y %H:%M:%S'), tb3[i3].rainRate, tb7[i7].rainRate))
             i3 += 1
             i7 += 1
-        elif tb3[i3].timestamp >= ts - 1 and tb3[i3].timestamp <= ts + 1:
+        elif i3 < len(tb3) and tb3[i3].timestamp >= ts - 1 and tb3[i3].timestamp <= ts + 1:
             # tb3 matches
             # tb7 is missing because it is zero
             print('%s,%5.3f,0.0' % (datetime.datetime.fromtimestamp(ts).strftime('%m/%d/%y %H:%M:%S'), tb3[i3].rainRate))
             i3 += 1
-        elif tb7[i7].timestamp >= ts - 1 and tb7[i7].timestamp <= ts + 1:
+        elif i7 < len(tb7) and tb7[i7].timestamp >= ts - 1 and tb7[i7].timestamp <= ts + 1:
             # tb7 matches
             # tb3 is missing because it is zero
             print('%s,0.0,%5.3f' % (datetime.datetime.fromtimestamp(ts).strftime('%m/%d/%y %H:%M:%S'), tb7[i7].rainRate))

@@ -11,18 +11,19 @@ Copyright (C)2022 by John A Kline (john@johnkline.com)
 weewx-rainrate is a WeeWX service that attempts to produce a
 "better" rainRate in loop packets.  Computing rain rate by
 computing from the current tip to the last tip can produce
-wildly inaccurate rates.  See:
-[Estimating Rain Rates from Tipping-Bucket Rain Gauge Measurements](https://ntrs.nasa.gov/api/citations/20070016690/downloads/20070016690.pdf)
-At present, this extension adopts the one minute buckets
+wildly inaccurate rates (in the author's case where a
+siphon tipping bucket is being used).  The author drew
+on [Estimating Rain Rates from Tipping-Bucket Rain Gauge Measurements](https://ntrs.nasa.gov/api/citations/20070016690/downloads/20070016690.pdf)
+for inspiration.  At present, this extension adopts one minute buckets
 and the miniumum of 4 minutes to compute a rain rate over.
-It does not adopt the cubic spline from the paper.  That
-may come over time.
+The extension also uses the average of the loop rain rates
+it produces as the rain rate on archive records.
 
-This extension might be especially useful for tipping
+This extension should be useful for tipping
 rain gauges that use a siphon for better accuracy over a wide
 range of rainfall.  These professional gauges maintain their
 accuracy over a wide range of rain intensity, but are
-especially unsuitable for computing rain rate via the time
+unsuitable for computing rain rate via the time
 between two tips.  The reason for the unsuitability is that
 a single discharge of the siphon my result in multiple tips
 (in close sucession).  The result of two tips in close
@@ -33,9 +34,9 @@ professional HyQuest Solutions TB3 tipping rain gauge with
 siphon.  It is accurate to 2% at any rain intensity, but with
 the siphon, two tips can come in quick succession.
 
-weewx-rainrate ignores the rainRate in the loop packet (if present)
-by overwriting/inserting rainRate to be the max of the
-4 through 15m rain rate (in 30s increments)  as computed by the extension.
+The extension was tested with a HyQuest Solutions TB3 siphon
+tipping bucket rain gauge and using a HyQuest Solutions TB7 (non-siphon)
+tipping bucket rain gauge as a reference (for rain rate).
 
 ## Visualization
 
@@ -64,7 +65,7 @@ For cases where at least 0.04 (4 tips) of rain have occurred in the last
 is computed for each, and the largest rate is chosen.  Rain rates are
 rounded to three decimals.
 
-Please not that this extension never manufactures a rain rate out of thin air.  It simply chooses the interval
+Please note that this extension never manufactures a rain rate out of thin air.  It simply chooses the interval
 for which to report the rate.  That interval may be between 4 and 15 minutes, but whichever interval
 is chosen, this extension reports the hourly rain rate as computed by the formula
 `3600 * volume-of-rain-in-the-interval / number-of-seconds-in-the-interval`.
@@ -106,12 +107,12 @@ the 10m-15m buckets are considered.
 
 # Installation Instructions
 
-1. Download the lastest release, weewx-rainrate-0.14.zip, from the
+1. Download the lastest release, weewx-rainrate-0.15.zip, from the
    [GitHub Repository](https://github.com/chaunceygardiner/weewx-rainrate).
 
 1. Run the following command.
 
-   `sudo /home/weewx/bin/wee_extension --install weewx-rainrate-0.14.zip`
+   `sudo /home/weewx/bin/wee_extension --install weewx-rainrate-0.15.zip`
 
    Note: this command assumes weewx is installed in /home/weewx.  If it's installed
    elsewhere, adjust the path of wee_extension accordingly.

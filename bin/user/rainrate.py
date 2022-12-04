@@ -1,41 +1,38 @@
 """
 rainrate.py
 
-Copyright (C)2020 by John A Kline (john@johnkline.com)
+Copyright (C)2022 by John A Kline (john@johnkline.com)
 Distributed under the terms of the GNU Public License (GPLv3)
 
 weewx-rainrate is a WeeWX service that attempts to produce a
-"better" rainRate in loop packets.
+"better" rainRate in loop packets.  Computing rain rate by
+computing from the current tip to the last tip can produce
+wildly inaccurate rates (in the author's case where a
+siphon tipping bucket is being used).  The author drew
+on [Estimating Rain Rates from Tipping-Bucket Rain Gauge Measurements](https://ntrs.nasa.gov/api/citations/20070016690/downloads/20070016690.pdf)
+for inspiration.  At present, this extension adopts one minute buckets
+and the miniumum of 4 minutes to compute a rain rate over.
+The extension also uses the average of the loop rain rates
+it produces as the rain rate on archive records.
 
-Estimating Rain Rates from Tipping-Bucket Rain Gauge Measurements
------------------------------------------------------------------
-See: https://ntrs.nasa.gov/api/citations/20070016690/downloads/20070016690.pdf
-One-minute rain rates suffer substantial errors, especially at low rain rates.
-When one-minute rain rates are averaged to 4 -7 minute scales, the errors
-dramatically reduce. At the 10- and 15-minute time scales, the errors further
-reduce. If the time scale increases to longer than 30 minutes, the errors become
-negligible.
+This extension should be useful for tipping
+rain gauges that use a siphon for better accuracy over a wide
+range of rainfall.  These professional gauges maintain their
+accuracy over a wide range of rain intensity, but are
+unsuitable for computing rain rate via the time
+between two tips.  The reason for the unsuitability is that
+a single discharge of the siphon my result in multiple tips
+(in close sucession).  The result of two tips in close
+succession will be a wildly overstated rain rate.
 
-The impetus for this extension is that author purchased a
-high quality HyQuest Solutions TB3 siphoning rain gauge.
-It is accurate to 2% at any rain intensity, but with the
-siphon, two tips can come in quick succession.  As such
-the rainRate produced by measuring the time delta between
-two tips can be wildly overstated.
+The impetus for this extension was the author's purchase of a
+professional HyQuest Solutions TB3 tipping rain gauge with
+siphon.  It is accurate to 2% at any rain intensity, but with
+the siphon, two tips can come in quick succession.
 
-weewx-rainrate ignores the rainRate in the loop packet (if present)
-by overwriting/inserting rainRate to be the max of the
-4 through 15m rain rate as computed by the extension.
-
-For low rain cases:
-
-If there was just one or two bucket tips (in the first 60s), we would see a rate of 0.6
-or 1.2 per hour selected (which is absurdly high).  For cases where 0.01 or 0.02 is observed
-in the last 15m, no matter when in that 15m it occurred, only the 15m bucket is considered
-(rate of 0.04 or 0.08).
-
-Lastly, for cases where 0.03 has been observed in the last 15m, only the 10m
-and up buckets will be considered.
+The extension was tested with a HyQuest Solutions TB3 siphon
+tipping bucket rain gauge and using a HyQuest Solutions TB7 (non-siphon)
+tipping bucket rain gauge as a reference (for rain rate).
 """
 
 import logging
@@ -58,7 +55,7 @@ from weewx.engine import StdService
 # get a logger object
 log = logging.getLogger(__name__)
 
-RAIN24H_VERSION = '0.14'
+RAIN24H_VERSION = '0.15'
 
 if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and sys.version_info[1] < 7):
     raise weewx.UnsupportedFeature(
@@ -75,6 +72,11 @@ class RainEntry:
     amount    : float # amount of rain
     expiration: int   # timestamp at which this entry should be removed
 
+@dataclass
+class LoopRainRate:
+    """A list of rain rates, used to compute rate for archive record."""
+    timestamp: int
+    rainRate : float
 
 class RainRate(StdService):
     """RainRate keep track of rain in loop pkts and updates each loop pkt with rainRate."""
@@ -99,11 +101,15 @@ class RainRate(StdService):
         # List of rain events, including when they "expire" (15m later).
         self.rain_entries : List[RainEntry] = []
 
+        # Save computed loop rain rates (for determining archive record rain rate).
+        self.loop_rain_rates: List[LoopRainRate] = []
+
         # Flag used to gather up archive records in pre_loop only once (at startup).
         self.initialized = False
 
         self.bind(weewx.PRE_LOOP, self.pre_loop)
         self.bind(weewx.NEW_LOOP_PACKET, self.new_loop)
+        self.bind(weewx.NEW_ARCHIVE_RECORD, self.new_archive_record)
 
     def pre_loop(self, event):
         """At WeeWX start, gather up the rain in 15m of archive records and same them
@@ -169,6 +175,40 @@ class RainRate(StdService):
         RainRate.add_packet(pkt, self.rain_entries)
         # Compute a rainRate and add it to the pkt.
         RainRate.compute_rain_rate(pkt, self.rain_entries)
+        # Save the computed rain rates (to be used to compute archive rain rate.
+        self.loop_rain_rates.append(LoopRainRate(
+            timestamp = pkt['dateTime'],
+            rainRate  = pkt['rainRate']))
+
+    def new_archive_record(self, event):
+        """ Overwrite archive rainRate with current rainRate."""
+        record: Dict[str, Any] = event.record
+
+        assert event.event_type == weewx.NEW_ARCHIVE_RECORD
+        log.debug(record)
+
+        # Consume the loop rain rates in loop_rain_rates that
+        # are for this archive record's period.
+        rates: List[float] = []
+        while len(self.loop_rain_rates) != 0 and self.loop_rain_rates[0].timestamp <= record['dateTime']:
+            rates.append(self.loop_rain_rates[0].rainRate)
+            self.loop_rain_rates.pop(0)
+
+        archive_rain_rate: float = 0.0
+        if len(rates) > 0:
+            # Report the average of the rainRates reported in loops
+            rain_rate_sum: float = 0.0
+            for rate in rates:
+                rain_rate_sum += rate
+            archive_rain_rate = rain_rate_sum / float(len(rates))
+        else:
+            # We have no help from loop records (probably, we're catching up when WeeWX restarted).
+            # The best we can do is average the rain reported in the archive record over 15m.
+            archive_rain_rate = record['rain'] / 900.0
+
+        # TODO: Verify that this archive record is received in the same units as loop data (i.e., before any conversion that might be needed).
+
+        record['rainRate'] = archive_rain_rate
 
     @staticmethod
     def add_packet(pkt, rain_entries):
@@ -183,7 +223,7 @@ class RainRate(StdService):
             rain_entries.insert(0, RainEntry(timestamp = pkt_time, amount = pkt['rain'], expiration = pkt_time + 900))
             log.debug('pkt_time: %d, found rain of %f.' % (pkt_time, pkt['rain']))
 
-        # Debit and remove any entries that have matured.
+        # Delete any entries that have matured.
         while len(rain_entries) > 0 and rain_entries[-1].expiration <= pkt_time:
             del rain_entries[-1]
 

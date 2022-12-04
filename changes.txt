@@ -1,7 +1,16 @@
 weewx-rainrate change history
 -----------------------------
 
-0.14 Release 2022/11/18
+0.15 Release 2022/12/04
+-----------------------
+Prior versions of this extension update rain rates in loop packets, but
+left archive records untouched.  Archive record rain rates are now
+updated to be the average of the rain rate in the loop records for
+that archive period.  If there are no loop record rain rates (most likely
+because weewx is doing a catchup at startup), the rain rate will be
+computed as the total rainfall for this archive period averaged over 15m.
+
+0.14 Release 2022/12/02
 -----------------------
 Now tested against a significant storm and against a quality non-siphon
 tipping bucket (HyQuest Solutions TB7).  Tweaked so that the TB3 (siphone)
