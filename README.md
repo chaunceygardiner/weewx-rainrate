@@ -33,22 +33,35 @@ tipping bucket rain gauge as a reference (for rain rate).
 
 ## Visualization
 
-The following graphs show the rain rate over the period of a 0.68" storm in Palo Alto, CA on December 1, 2022.
-The blue lines are the untouched rates of a HyQuest TB7 tipping bucket, which does not have
-a siphon and, as such, is provided as a reference.
+The following two images show rain rates during two storms in Palo Alto in
+December of 2022.  The first yielded 0.68" of rain on December 1.
+The second is the first part of a storm on December 3 (measuring 0.32" of rain).
 
-The red line shows the rain rate from a HyQuest TB3 tipping bucket, which does have a siphon and, as such,
-suffers from multiple tips in close proximity.  The left graph shows the untouched rate of the TB3.  As one
-can see, nonsensical rates of up to 15" per hour are shown.
+The blue lines in each graph are the untouched rates of a HyQuest TB7 tipping bucket, which does not have a siphon and, as such, is provided as a reference.
+
+The red lines show the rain rate from a HyQuest TB3 tipping bucket, which does have a siphon and, as such, can suffer from multiple tips at once.
+The left graph in each image shows the untouched rain rate of the TB3.  As one
+can see, nonsensical rates of up to 16" per hour are shown.
 
 On the right, this rainrate extension is used. The TB3 shows rain rates that track reasonably well with the TB7.
 
-![Without extension on left, with extension on right.](OrigAndAdj.png)
-Reference TB7 in blue.  TB3 (red) on left without extension, on right with this extension.
+![Dec 1, 2022 storm](Dec1BeforeAndAfter.png)
+Dec 1, 2022 storm.  Reference TB7 in blue.  TB3 (red) on left without extension, on right with this extension.
+
+![Dec 3, 2022 storm](Dec3BeforeAndAfter.png)
+Dec 3, 2022 storm.  Reference TB7 in blue.  TB3 (red) on left without extension, on right with this extension.
 
 ## Algorithm
 
-Coming soon.
+The key feature of this extension is that, when multiple tips are encountered in a loop record, the extension (for the purposes of calculating rain rate) records 1/2 of the amount at the current time.  It records the other half of the amount at a point midway between the last rain reported and the current time.
+
+The exceptional case is where a multi-tip reading is encountered on the first tip of a storm (where a storm is defined as the time of the first tip through to a period of 30 minutes with no tips).  For this case, 0.01 of rain is recorded at the current time and remainder is recorded 15m earlier.
+
+The rain rate is determined by the calculation:
+`3600.0 * rain-amount-of-most-recent / (now - time-of-previous-rain-event)`
+The rain-amount-of-most-recent will likely always be 0.01 (since
+multi-tips are spit up).  The time-of-previous-rain-event is not the last rain
+event; rather, it's the one before that.
 
 # Installation Instructions
 
