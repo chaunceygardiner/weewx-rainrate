@@ -58,9 +58,9 @@ The key feature of this extension is that, when multiple tips are encountered in
 The exceptional case is where a multi-tip reading is encountered on the first tip of a storm (where a storm is defined as the time of the first tip through to a period of 30 minutes with no tips).  For this case, 0.01 of rain is recorded at the current time and remainder is recorded 15m earlier.
 
 The rain rate is determined by the calculation:
-`3600.0 * rain-amount-of-most-recent / (now - time-of-previous-rain-event)`
-The rain-amount-of-most-recent will likely always be 0.01 (since
-multi-tips are spit up).  The time-of-previous-rain-event is not the last rain
+`3600.0 * rain_amount_of_most_recent / (now - time_of_previous_rain_event)`
+The `rain_amount_of_most_recent` will likely always be 0.01 (since
+multi-tips are spit up).  The `time_of_previous_rain_event` is not the last rain
 event; rather, it's the one before that.
 
 # Installation Instructions
