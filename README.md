@@ -9,23 +9,16 @@ Copyright (C)2022 by John A Kline (john@johnkline.com)
 ## Description
 
 weewx-rainrate is a WeeWX service that attempts to produce a
-"better" rainRate in loop packets.  Computing rain rate by
-computing from the current tip to the last tip can produce
-wildly inaccurate rates (in the author's case where a
-siphon tipping bucket is being used).  The author drew
-on [Estimating Rain Rates from Tipping-Bucket Rain Gauge Measurements](https://ntrs.nasa.gov/api/citations/20070016690/downloads/20070016690.pdf)
-for inspiration.  At present, this extension adopts one minute buckets
-and the miniumum of 4 minutes to compute a rain rate over.
-The extension also uses the average of the loop rain rates
-it produces as the rain rate on archive records.
+"better" rainRate in loop packets (and archive records) for
+siphon tipping bucket rain gauges.
 
-This extension should be useful for tipping
+This extension will be useful for tipping
 rain gauges that use a siphon for better accuracy over a wide
 range of rainfall.  These professional gauges maintain their
 accuracy over a wide range of rain intensity, but are
 unsuitable for computing rain rate via the time
 between two tips.  The reason for the unsuitability is that
-a single discharge of the siphon my result in multiple tips
+a single discharge of the siphon may result in multiple tips
 (in close sucession).  The result of two tips in close
 succession will be a wildly overstated rain rate.
 
@@ -55,55 +48,7 @@ Reference TB7 in blue.  TB3 (red) on left without extension, on right with this 
 
 ## Algorithm
 
-Based on [Estimating Rain Rates from Tipping-Bucket Rain Gauge Measurements](https://ntrs.nasa.gov/api/citations/20070016690/downloads/20070016690.pdf)
-"One-minute rain rates suffer substantial errors, especially at low rain rates.
-When one-minute rain rates are averaged to 4 -7 minute scales, the errors
-dramatically reduce."
-
-For cases where at least 0.04 (4 tips) of rain have occurred in the last
-15 minutes, rain for the 4m-15m time periods is is compiled, a rain rate
-is computed for each, and the largest rate is chosen.  Rain rates are
-rounded to three decimals.
-
-Please note that this extension never manufactures a rain rate out of thin air.  It simply chooses the interval
-for which to report the rate.  That interval may be between 4 and 15 minutes, but whichever interval
-is chosen, this extension reports the hourly rain rate as computed by the formula
-`3600 * volume-of-rain-in-the-interval / number-of-seconds-in-the-interval`.
-
-### Example
-
-0.01 rain    43s ago.
-0.01 rain  3:12m ago.
-0.01 rain  6:31m ago.
-0.01 rain 14:10m ago.
-
-The following table is computed and a 0.3 rainrate will be
-reported (the highest rate is the 0:00-4:00m bucket).
-
-| Bucket             | Timespan |    Rain     |  Rate/hr. |
-|--------------------|---------:|------------:|----------:|
-| __0:00m -  4:00m__ |  __240s__|     __0.02__|  __0.300__|
-|   0:00m -  5:00m   |     300s |        0.02 |     0.240 |
-|   0:00m -  6:00m   |     360s |        0.02 |     0.200 |
-|   0:00m -  7:00m   |     420s |        0.03 |     0.257 |
-|   0:00m -  8:00m   |     480s |        0.03 |     0.225 |
-|   0:00m -  9:00m   |     540s |        0.03 |     0.200 |
-|   0:00m - 10:00m   |     600s |        0.03 |     0.180 |
-|   0:00m - 11:00m   |     660s |        0.03 |     0.164 |
-|   0:00m - 12:00m   |     720s |        0.03 |     0.150 |
-|   0:00m - 13:00m   |     780s |        0.03 |     0.138 |
-|   0:00m - 14:00m   |     840s |        0.03 |     0.129 |
-|   0:00m - 15:00m   |     900s |        0.04 |     0.160 |
-
-## Algorithm for Low Numbers of Bucket Tips
-
-For low bucket tip cases (< 0.04 in last 15m):
-
-For cases where 0.01 or 0.02 is observed in the last 15m, no matter when in that 15m
-the tip occurred, only the 15m bucket is considered (hence, a rate of 0.04/0.08).
-
-Lasttly, for cases where 0.03 has been observed in the last 15m, only
-the 10m-15m buckets are considered.
+Coming soon.
 
 # Installation Instructions
 

@@ -118,7 +118,7 @@ if __name__ == '__main__':
             # both tb3 and tb7 are zero
             print('%s,0.0,0.0' % datetime.datetime.fromtimestamp(ts).strftime('%m/%d/%y %H:%M:%S'))
             # If ts > tb3 or tb5 timestamps, we have a problem
-            if tb3[i3].timestamp < ts or tb7[i7].timestamp < ts:
+            if (i3 < len(tb3) and tb3[i3].timestamp < ts) or (i7 < len(tb7) and tb7[i7].timestamp < ts):
                 print('SHOULD NOT GET HERE: Houston, we have a problem: ts:%d, tb3:%d, tb7:%d' % (ts, tb3[i3].timestamp, tb7[i7].timestamp))
                 sys.exit(1)
         ts += 2
