@@ -3,11 +3,14 @@ weewx-rainrate change history
 
 0.16 Release 2022/12/05
 -----------------------
-Completely revamp calculations.  Now the calculation is
-3600 * 0.01 / (now - the time of two tips ago)
-0.02 readings of rain are split with half now and half
-recorded (for purposes of calculating rainrate) as taking
-place halfway in between now and the previous tip.
+1. Completely revamp calculations.  Now the calculation is
+   3600 * 0.01 / (now - the time of two tips ago)
+   0.02 readings of rain are split with half now and half
+   recorded (for purposes of calculating rainrate) as taking
+   place halfway in between now and the previous tip.
+
+2. Archive record now reports highest rain rate of the
+   archive period.
 
 
 0.15 Release 2022/12/04
