@@ -186,8 +186,8 @@ class RainRate(StdService):
         # Pick the highest rain rate for the archive record.
         archive_rain_rate: Optional[float] = None
         while len(self.loop_rain_rates) != 0 and self.loop_rain_rates[0].timestamp <= record['dateTime']:
-            if archive_rain_rate is None or self.loop_rain_rates[0] > archive_rain_rate:
-                archive_rain_rate = self.loop_rain_rates[0]
+            if archive_rain_rate is None or self.loop_rain_rates[0].rainRate > archive_rain_rate.rainRate:
+                archive_rain_rate = self.loop_rain_rates[0].rainRate
             self.loop_rain_rates.pop(0)
 
             if archive_rain_rate is None:
