@@ -1,6 +1,10 @@
 weewx-rainrate change history
 -----------------------------
 
+0.17 Release 2022/12/12
+-----------------------
+Fix errors mistakenly released in 0.16.
+
 0.16 Release 2022/12/05
 -----------------------
 1. Completely revamp calculations.  Now the calculation is
