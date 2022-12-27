@@ -1,6 +1,11 @@
 weewx-rainrate change history
 -----------------------------
 
+0.19 Release 2022/12/??
+-----------------------
+Decay the rainrate more slowly as time passes from the last tip
+(to more closely match the vanatage console's rain rate decay).
+
 0.18 Release 2022/12/27
 -----------------------
 Bug fix, was decrementing rain in pkt when multi-tips occurred.

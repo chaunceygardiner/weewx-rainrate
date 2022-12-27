@@ -9,7 +9,7 @@
 
     To Run:
 
-        python bin/user/rate_computer/rate_computer.py tb3.csv tb7.csv
+        python bin/user/rate_computer/combiner.py tb3.csv tb7.csv
 
     Example output:
         .

@@ -10,7 +10,7 @@ siphon tipping bucket rain gauges.
 
 This extension will be useful for tipping
 rain gauges that use a siphon for better accuracy over a wide
-range of rainfall.  These professional gauges maintain their
+range of rainfall.  These industrial gauges maintain their
 accuracy over a wide range of rain intensity, but are
 unsuitable for computing rain rate via the time
 between two tips.  The reason for the unsuitability is that
@@ -19,9 +19,9 @@ a single discharge of the siphon may result in multiple tips
 succession will be a wildly overstated rain rate.
 
 The impetus for this extension was the author's purchase of a
-professional HyQuest Solutions TB3 tipping rain gauge with
-siphon.  It is accurate to 2% at any rain intensity, but with
-the siphon, two tips can come in quick succession.
+HyQuest Solutions TB3 tipping rain gauge with siphon.  It is
+accurate to 2% at any rain intensity, but with the siphon, two
+tips can come in quick succession.
 
 The extension was tested with a HyQuest Solutions TB3 siphon
 tipping bucket rain gauge and using a HyQuest Solutions TB7 (non-siphon)
@@ -235,6 +235,16 @@ class RainRate(StdService):
         if len(rain_entries) < 2:
             pkt['rainRate'] = 0.0
         else:
-            pkt['rainRate'] = 3600 * rain_entries[0].amount / (pkt['dateTime'] - rain_entries[1].timestamp)
-
+            # Immediately after a bucket tip, the rainRate is entirely composed of:
+            # 3600 * last_tip_amount / (time_of_last_tip - time_of_next_to_last_tip)
+            rainRate1 = 3600 * rain_entries[0].amount / (rain_entries[0].timestamp - rain_entries[1].timestamp)
+            rainRate2 = 3600 * rain_entries[0].amount / (pkt['dateTime'] - rain_entries[1].timestamp)
+            # As time passes, rainRate2 becomes more prominent
+            secs_since_last_tip = pkt['dateTime'] - rain_entries[0].timestamp
+            if secs_since_last_tip >= 900.0:
+                factor1, factor2 = 0.0, 1.0
+            else:
+                factor2 = (secs_since_last_tip / 900.0) ** 2
+                factor1 = 1 - factor2
+            pkt['rainRate'] = rainRate1 * factor1 + rainRate2 * factor2
         log.debug('new_loop(%d): Added/updated pkt[rainRate] of %f' % (pkt['dateTime'], pkt['rainRate']))
