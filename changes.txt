@@ -1,6 +1,10 @@
 weewx-rainrate change history
 -----------------------------
 
+0.18 Release 2022/12/27
+-----------------------
+Bug fix, was decrementing rain in pkt when multi-tips occurred.
+
 0.17 Release 2022/12/12
 -----------------------
 Fix errors mistakenly released in 0.16.

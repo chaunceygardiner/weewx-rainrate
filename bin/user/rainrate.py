@@ -48,7 +48,7 @@ from weewx.engine import StdService
 # get a logger object
 log = logging.getLogger(__name__)
 
-RAINRATE_VERSION = '0.17'
+RAINRATE_VERSION = '0.18'
 
 if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and sys.version_info[1] < 7):
     raise weewx.UnsupportedFeature(
@@ -208,20 +208,21 @@ class RainRate(StdService):
         # Process new packet.  Be careful, the first time through, pkt['rain'] may be None.
         pkt_time: int       = to_int(pkt['dateTime'])
         if 'rain' in pkt and pkt['rain'] is not None and pkt['rain'] > 0.0:
+            pkt_rain = pkt['rain']
             if len(rain_entries) == 0:
                 rain_entries.insert(0, RainEntry(timestamp = pkt_time, amount = 0.01, expiration = pkt_time + 1800))
-                pkt['rain'] = pkt['rain'] - 0.01
-                if pkt['rain'] > 0.001:
+                pkt_rain = pkt_rain - 0.01
+                if pkt_rain > 0.001:
                     # We have a multiple tip on the first tip of the storm.  Put the rest of the rain 900s ago, just beyond
                     # the 15m span.
-                    rain_entries.append(RainEntry(timestamp = pkt_time - 900, amount = pkt['rain'], expiration = pkt_time + 900))
-            elif pkt['rain'] < 0.011:
-                    rain_entries.insert(0, RainEntry(timestamp = pkt_time, amount = pkt['rain'], expiration = pkt_time + 1800))
+                    rain_entries.append(RainEntry(timestamp = pkt_time - 900, amount = pkt_rain, expiration = pkt_time + 900))
+            elif pkt_rain < 0.011:
+                    rain_entries.insert(0, RainEntry(timestamp = pkt_time, amount = pkt_rain, expiration = pkt_time + 1800))
             else:
                 # Spread the rain over equally (in halves) from last rain in rain_entries.
                 earlier_pkt_time: int = pkt_time - ((pkt_time - rain_entries[0].timestamp) / 2)
-                rain_entries.insert(0, RainEntry(timestamp = earlier_pkt_time, amount = pkt['rain'] / 2.0, expiration = earlier_pkt_time + 1800))
-                rain_entries.insert(0, RainEntry(timestamp = pkt_time, amount = pkt['rain'] / 2.0, expiration = pkt_time + 1800))
+                rain_entries.insert(0, RainEntry(timestamp = earlier_pkt_time, amount = pkt_rain / 2.0, expiration = earlier_pkt_time + 1800))
+                rain_entries.insert(0, RainEntry(timestamp = pkt_time, amount = pkt_rain / 2.0, expiration = pkt_time + 1800))
 
         # Delete any entries that have matured.
         while len(rain_entries) > 0 and rain_entries[-1].expiration <= pkt_time:
