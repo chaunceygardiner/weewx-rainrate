@@ -1,7 +1,7 @@
 weewx-rainrate change history
 -----------------------------
 
-0.20 Release 2022/12/??
+0.20 Release 2022/12/31
 -----------------------
 A tweak to the decay of rainRate.  Rain rate is computed as the average of:
 rainRate1: 3600.0 * rain_amount_of_most_recent_tip / (time_of_last_tip - time_of_previous_tip)
