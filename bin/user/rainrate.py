@@ -29,6 +29,7 @@ tipping bucket rain gauge as a reference (for rain rate).
 """
 
 import logging
+import math
 import sys
 import time
 
@@ -48,7 +49,7 @@ from weewx.engine import StdService
 # get a logger object
 log = logging.getLogger(__name__)
 
-RAINRATE_VERSION = '0.19'
+RAINRATE_VERSION = '0.20'
 
 if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and sys.version_info[1] < 7):
     raise weewx.UnsupportedFeature(
@@ -239,12 +240,12 @@ class RainRate(StdService):
             # 3600 * last_tip_amount / (time_of_last_tip - time_of_next_to_last_tip)
             rainRate1 = 3600 * rain_entries[0].amount / (rain_entries[0].timestamp - rain_entries[1].timestamp)
             rainRate2 = 3600 * rain_entries[0].amount / (pkt['dateTime'] - rain_entries[1].timestamp)
-            # As time passes, rainRate2 becomes more prominent
+            # As time passes, rainRate2 becomes more prominent (y=x^sqrt(2))
             secs_since_last_tip = pkt['dateTime'] - rain_entries[0].timestamp
             if secs_since_last_tip >= 900.0:
                 factor1, factor2 = 0.0, 1.0
             else:
-                factor2 = (secs_since_last_tip / 900.0) ** 2
+                factor2 = (secs_since_last_tip / 900.0) ** math.sqrt(2)
                 factor1 = 1 - factor2
             pkt['rainRate'] = rainRate1 * factor1 + rainRate2 * factor2
         log.debug('new_loop(%d): Added/updated pkt[rainRate] of %f' % (pkt['dateTime'], pkt['rainRate']))

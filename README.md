@@ -73,16 +73,16 @@ event; rather, it's the one before that.
 
 The first rate (the rate between two tips) plays a much greater influence on the rate
 when a tip has just occurred.  Over time, the second rate becomes the dominant influence
-over the rate.
+over the rate.  The influence of the second rate follows the slope of y=x^sqrt(2).
 
 # Installation Instructions
 
-1. Download the lastest release, weewx-rainrate-0.19.zip, from the
+1. Download the lastest release, weewx-rainrate-0.20.zip, from the
    [GitHub Repository](https://github.com/chaunceygardiner/weewx-rainrate).
 
 1. Run the following command.
 
-   `sudo /home/weewx/bin/wee_extension --install weewx-rainrate-0.19.zip`
+   `sudo /home/weewx/bin/wee_extension --install weewx-rainrate-0.20.zip`
 
    Note: this command assumes weewx is installed in /home/weewx.  If it's installed
    elsewhere, adjust the path of wee_extension accordingly.
