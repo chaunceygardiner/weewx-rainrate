@@ -51,6 +51,9 @@ Dec 1, 2022 storm.  Reference TB7 in blue.  TB3 (red) on left without extension,
 ![Dec 3, 2022 storm](Dec3BeforeAndAfter.png)
 Dec 3, 2022 storm.  Reference TB7 in blue.  TB3 (red) on left without extension, on right with this extension.
 
+The TB3 vs. TB7 `rain` and `rainRate` values in  archive records for an entire day where 2 1/2 inches of rain
+fell can be ![here](TB3vsTB7_2022-12-31.md).
+
 ## Algorithm
 
 The key feature of this extension is that, when multiple tips are encountered in a loop record, the extension (for the purposes of calculating rain rate) records 1/2 of the amount at the current time.  It records the other half of the amount at a point midway between the last rain reported and the current time.
