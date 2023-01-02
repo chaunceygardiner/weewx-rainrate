@@ -52,7 +52,7 @@ Dec 1, 2022 storm.  Reference TB7 in blue.  TB3 (red) on left without extension,
 Dec 3, 2022 storm.  Reference TB7 in blue.  TB3 (red) on left without extension, on right with this extension.
 
 The TB3 vs. TB7 `rain` and `rainRate` values in  archive records for an entire day where 2 1/2 inches of rain
-fell can be ![here](TB3vsTB7_2022-12-31.md).
+fell can be found [here](TB3vsTB7_2022-12-31.md).
 
 ## Algorithm
 
