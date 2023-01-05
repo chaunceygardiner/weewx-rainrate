@@ -110,7 +110,7 @@ class RainRateTests(unittest.TestCase):
             user.rainrate.RainRate.add_packet(pkt, rain_entries)
             user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
         # Previous tip was 114s ago.
-        self.assertAlmostEqual(pkt['rainRate'], 0.31578947368)
+        self.assertAlmostEqual(pkt['rainRate'], 0.32142857142857145)
 
         # Another tip 2s later.
         ts += 2
@@ -147,7 +147,7 @@ class RainRateTests(unittest.TestCase):
             user.rainrate.RainRate.add_packet(pkt, rain_entries)
         user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
         # Prvious tip was 297s ago.
-        self.assertAlmostEqual(pkt['rainRate'], 0.12121212121)
+        self.assertAlmostEqual(pkt['rainRate'], 0.12162162162162163)
 
         # No rain for 5:00
         for _ in range(150):
@@ -156,7 +156,7 @@ class RainRateTests(unittest.TestCase):
             user.rainrate.RainRate.add_packet(pkt, rain_entries)
         # Prvious tip was 597s ago.
         user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
-        self.assertAlmostEqual(pkt['rainRate'], 0.06030150753)
+        self.assertAlmostEqual(pkt['rainRate'], 0.06040268456375839)
 
         # No rain for 5:00
         for _ in range(150):
@@ -165,7 +165,7 @@ class RainRateTests(unittest.TestCase):
             user.rainrate.RainRate.add_packet(pkt, rain_entries)
         # Prvious tip was 897s ago.
         user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
-        self.assertAlmostEqual(pkt['rainRate'], 0.04013377926)
+        self.assertAlmostEqual(pkt['rainRate'], 0.04017857142857143)
 
     def test_compute_rain_rate_50_percent(self):
         rain_entries = []
@@ -182,12 +182,12 @@ class RainRateTests(unittest.TestCase):
             user.rainrate.RainRate.add_packet(pkt, rain_entries)
             ts += 2
 
-        # 2000 seconds of packets, but we only keep 1800s of entries.
-        # Rain every 4s is 450 entries.
+        # 2000 seconds of packets.
+        # Rain every 4s.
         self.assertEqual(len(rain_entries), 450)
         user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
         # Prevous tip was 6s ago.
-        self.assertEqual(pkt['rainRate'], 6.0)
+        self.assertEqual(pkt['rainRate'], 9.0)
 
     def test_compute_rain_rate_one_in_15(self):
         rain_entries = []
@@ -206,7 +206,7 @@ class RainRateTests(unittest.TestCase):
         self.assertEqual(len(rain_entries), 60)
         user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
         # Prevous packet 32s ago.
-        self.assertAlmostEqual(pkt['rainRate'], 0.75)
+        self.assertAlmostEqual(pkt['rainRate'], 1.2)
 
     def test_compute_rain_rate_one_in_45(self):
         rain_entries = []
@@ -226,7 +226,7 @@ class RainRateTests(unittest.TestCase):
         # Previous tip was 108s ago.
         user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
         # Prevous tip was 90s ago.
-        self.assertAlmostEqual(pkt['rainRate'], 0.33333333333)
+        self.assertAlmostEqual(pkt['rainRate'], 0.4)
 
     def test_2022_11_rain_event(self):
         """
