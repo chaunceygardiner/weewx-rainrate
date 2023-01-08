@@ -134,50 +134,53 @@ class RainRate(StdService):
 
             # Fetch the records.
             start = time.time()
-            archive_pkts: List[Dict[str, Any]] = RainRate.get_archive_packets(
+            archive_recs: List[Dict[str, Any]] = RainRate.get_archive_records(
                 dbm, archive_columns, earliest_time)
 
             # Save rain events (if any).
-            pkt_count = 0
-            for pkt in archive_pkts:
-                if 'rain' in pkt and pkt['rain'] is not None and pkt['rain'] > 0.0000001:
-                    pkt_count += 1
-                    archive_time = pkt['dateTime']
-                    archive_amt = pkt['rain']
-                    if archive_amt < 0.0100001:
-                        # Add the single tip midway through archive period.
-                        pkt_time = round(archive_time - (self.archive_interval / 2.0))
-                        self.rain_entries.append(RainEntry(timestamp = pkt_time, amount = archive_amt, expiration = pkt_time + 900, dont_merge=True))
-                    else:
-                        # Evenly space the tips
-                        number_of_tips: int = round(archive_amt / 0.01)
-                        interval: int = round(self.archive_interval / number_of_tips)
-                        time_of_rain: int = archive_time
-                        for _ in range(number_of_tips):
-                            time_of_rain -= interval
-                            self.rain_entries.append(
-                                RainEntry(timestamp = time_of_rain, amount = archive_amt / number_of_tips, expiration = time_of_rain + 1800, dont_merge=True))
-                            time_of_rain -= interval
-            log.debug('Collected %d archive packets containing rain in %f seconds.' % (pkt_count, time.time() - start))
+            rec_count = 0
+            for rec in archive_recs:
+                if 'rain' in rec and rec['rain'] is not None and rec['rain'] > 0.0000001:
+                    rec_count += 1
+                    RainRate.archive_records_to_rain_entries(rec, self.archive_interval, self.rain_entries)
+            log.debug('Collected %d archive records containing rain in %f seconds.' % (rec_count, time.time() - start))
         except Exception as e:
             # Print problem to log and give up.
             log.error('Error in RainRate setup.  RainRate is exiting. Exception: %s' % e)
             weeutil.logger.log_traceback(log.error, "    ****  ")
 
     @staticmethod
-    def get_archive_packets(dbm, archive_columns: List[str],
+    def archive_records_to_rain_entries(rec: Dict[str, Any], archive_interval: int, rain_entries: List[RainEntry])->None:
+        archive_time = rec['dateTime']
+        archive_amt = rec['rain']
+        if archive_amt < 0.0100001:
+            # Add the single tip midway through archive period.
+            rec_time = round(archive_time - (archive_interval / 2.0))
+            rain_entries.append(RainEntry(timestamp = rec_time, amount = archive_amt, expiration = rec_time + 1800, dont_merge=True))
+        else:
+            # Evenly space the tips
+            number_of_tips: int = round(archive_amt / 0.01)
+            interval: int = round(archive_interval / number_of_tips)
+            time_of_rain: int = archive_time
+            for _ in range(number_of_tips):
+                time_of_rain -= interval
+                rain_entries.append(
+                    RainEntry(timestamp = time_of_rain, amount = archive_amt / number_of_tips, expiration = time_of_rain + 1800, dont_merge=True))
+
+    @staticmethod
+    def get_archive_records(dbm, archive_columns: List[str],
             earliest_time: int) -> List[Dict[str, Any]]:
         """At startup, gather previous 15 of rain."""
-        packets = []
+        records = []
         for cols in dbm.genSql('SELECT * FROM archive' \
                 ' WHERE dateTime > %d ORDER BY dateTime ASC' % earliest_time):
-            pkt: Dict[str, Any] = {}
+            rec: Dict[str, Any] = {}
             for i in range(len(cols)):
-                pkt[archive_columns[i]] = cols[i]
-            packets.append(pkt)
-            log.debug('get_archive_packets: pkt(%s): %s' % (
-                timestamp_to_string(pkt['dateTime']), pkt))
-        return packets
+                rec[archive_columns[i]] = cols[i]
+            records.append(rec)
+            log.debug('get_archive_records: rec(%s): %s' % (
+                timestamp_to_string(rec['dateTime']), rec))
+        return records
 
     def new_loop(self, event):
         """ Record rain, compute rainRate and add/update rainRate in the pkt."""

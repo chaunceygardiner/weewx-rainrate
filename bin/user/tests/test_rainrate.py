@@ -70,6 +70,58 @@ class RainRateTests(unittest.TestCase):
         ts += 2
         self.assertEqual(len(rain_entries), 1)
 
+
+    def test_archive_records_to_rain_entries(self):
+        archive_interval = 300
+
+        rain_entries = []
+        rec = { 'dateTime': 1673208000, 'usUnits': 'US', 'rain': 0.05, 'rainRate': 0.60 }
+        user.rainrate.RainRate.archive_records_to_rain_entries(rec, archive_interval, rain_entries)
+        self.assertEqual(len(rain_entries), 5)
+
+        self.assertEqual(rain_entries[4].timestamp, 1673207700)
+        self.assertAlmostEqual(rain_entries[4].amount, 0.01)
+        self.assertAlmostEqual(rain_entries[4].expiration, 1673209500)
+
+        self.assertEqual(rain_entries[3].timestamp, 1673207760)
+        self.assertAlmostEqual(rain_entries[3].amount, 0.01)
+        self.assertAlmostEqual(rain_entries[3].expiration, 1673209560)
+
+        self.assertEqual(rain_entries[2].timestamp, 1673207820)
+        self.assertAlmostEqual(rain_entries[2].amount, 0.01)
+        self.assertAlmostEqual(rain_entries[2].expiration, 1673209620)
+
+        self.assertEqual(rain_entries[1].timestamp, 1673207880)
+        self.assertAlmostEqual(rain_entries[1].amount, 0.01)
+        self.assertAlmostEqual(rain_entries[1].expiration, 1673209680)
+
+        self.assertEqual(rain_entries[0].timestamp, 1673207940)
+        self.assertAlmostEqual(rain_entries[0].amount, 0.01)
+        self.assertAlmostEqual(rain_entries[0].expiration, 1673209740)
+
+        rain_entries = []
+        rec = { 'dateTime': 1673208000, 'usUnits': 'US', 'rain': 0.01, 'rainRate': 0.60 }
+        user.rainrate.RainRate.archive_records_to_rain_entries(rec, archive_interval, rain_entries)
+        self.assertEqual(len(rain_entries), 1)
+
+        self.assertEqual(rain_entries[0].timestamp, 1673207850)
+        self.assertAlmostEqual(rain_entries[0].amount, 0.01)
+        self.assertAlmostEqual(rain_entries[0].expiration, 1673209650)
+
+        rain_entries = []
+        rec = { 'dateTime': 1673208000, 'usUnits': 'US', 'rain': 0.02, 'rainRate': 0.60 }
+        user.rainrate.RainRate.archive_records_to_rain_entries(rec, archive_interval, rain_entries)
+        self.assertEqual(len(rain_entries), 2)
+
+        self.assertEqual(rain_entries[1].timestamp, 1673207700)
+        self.assertAlmostEqual(rain_entries[1].amount, 0.01)
+        self.assertAlmostEqual(rain_entries[1].expiration, 1673209500)
+
+        self.assertEqual(rain_entries[0].timestamp, 1673207850)
+        self.assertAlmostEqual(rain_entries[0].amount, 0.01)
+        self.assertAlmostEqual(rain_entries[0].expiration, 1673209650)
+
+
     def test_compute_rain_rate(self):
         rain_entries = []
         ts = 1668104200
