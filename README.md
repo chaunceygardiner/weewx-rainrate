@@ -74,12 +74,12 @@ contains a tip, this second rate is not calculated.
 
 # Installation Instructions
 
-1. Download the lastest release, weewx-rainrate-0.30.zip, from the
+1. Download the lastest release, weewx-rainrate-0.31.zip, from the
    [GitHub Repository](https://github.com/chaunceygardiner/weewx-rainrate).
 
 1. Run the following command.
 
-   `sudo /home/weewx/bin/wee_extension --install weewx-rainrate-0.30.zip`
+   `sudo /home/weewx/bin/wee_extension --install weewx-rainrate-0.31.zip`
 
    Note: this command assumes weewx is installed in /home/weewx.  If it's installed
    elsewhere, adjust the path of wee_extension accordingly.

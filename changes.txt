@@ -1,8 +1,13 @@
 weewx-rainrate change history
 -----------------------------
 
+0.31 Release 2023/01/?? 
+-----------------------
+Although never observed, handle case where double tip spans two loop records.
+Although never observed, handle case where more than two tips in a loop record.
+
 0.30 Release 2023/01/??
-----------------------
+-----------------------
 A rainrate, once computed, will stick until a point arrives in time where
 that rainrate cannot be acheived because, even if the next tip were to
 occur, the rainrate would be lower than the present rate.  At that point,

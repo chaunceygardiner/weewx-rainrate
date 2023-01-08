@@ -32,7 +32,7 @@ class RainRateTests(unittest.TestCase):
         pkt = { 'dateTime': ts, 'rain': 0.01, 'rainRate': 0.0 }
         user.rainrate.RainRate.add_packet(pkt, rain_entries)
         self.assertEqual(len(rain_entries), 1)
-        self.assertEqual(rain_entries[0], user.rainrate.RainEntry(expiration = ts + 1800, timestamp = ts, amount = 0.01))
+        self.assertEqual(rain_entries[0], user.rainrate.RainEntry(expiration = ts + 1800, timestamp = ts, amount = 0.01, dont_merge = False))
         ts += 2
 
         # Add 448 pkts of zero rain.  Entry above should still be present.
@@ -41,14 +41,14 @@ class RainRateTests(unittest.TestCase):
             user.rainrate.RainRate.add_packet(pkt, rain_entries)
             ts += 2
         self.assertEqual(len(rain_entries), 1)
-        self.assertEqual(rain_entries[0], user.rainrate.RainEntry(expiration = 1668104400 + 1800, timestamp = 1668104400, amount = 0.01))
+        self.assertEqual(rain_entries[0], user.rainrate.RainEntry(expiration = 1668104400 + 1800, timestamp = 1668104400, amount = 0.01, dont_merge = False))
 
         # Add a pkt of 0.01 rain.  Should now have two entries.
         pkt = { 'dateTime': ts, 'rain': 0.01, 'rainRate': 0.0 }
         user.rainrate.RainRate.add_packet(pkt, rain_entries)
         self.assertEqual(len(rain_entries), 2)
-        self.assertEqual(rain_entries[0], user.rainrate.RainEntry(expiration = ts + 1800, timestamp = ts, amount = 0.01))
-        self.assertEqual(rain_entries[1], user.rainrate.RainEntry(expiration = 1668104400 + 1800, timestamp = 1668104400, amount = 0.01))
+        self.assertEqual(rain_entries[0], user.rainrate.RainEntry(expiration = ts + 1800, timestamp = ts, amount = 0.01, dont_merge = False))
+        self.assertEqual(rain_entries[1], user.rainrate.RainEntry(expiration = 1668104400 + 1800, timestamp = 1668104400, amount = 0.01, dont_merge = False))
         ts += 2
 
         # Add a pkt of 0.00 rain. Expect first entry to still be around.
@@ -80,28 +80,43 @@ class RainRateTests(unittest.TestCase):
         user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
         self.assertEqual(pkt['rainRate'], 0.0)
 
-        # Another tip 2s later.  0.02 over 10m
+        # Another tip 2s later.  These will be treated as a double tip and merged.
+        # Since that make it the first tip of the storm, rain rate is 0.0.
         ts += 2
-        pkt = { 'dateTime': ts, 'rain': 0.01, 'rainRate': 18.0 }
+        pkt = { 'dateTime': ts, 'rain': 0.01, 'rainRate': 0.0 }
         user.rainrate.RainRate.add_packet(pkt, rain_entries)
         user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
-        # 0.01 in 2s is 18" an hour. 
-        self.assertEqual(pkt['rainRate'], 18.0)
+        # 0.01 in 2s is 18" an hour.
+        self.assertEqual(pkt['rainRate'], 0.0)
 
         # Another tip 2s later.
         ts += 2
-        pkt = { 'dateTime': 1668104204, 'rain': 0.01, 'rainRate': 18.0 }
+        pkt = { 'dateTime': 1668104204, 'rain': 0.01, 'rainRate': 0.0 }
         user.rainrate.RainRate.add_packet(pkt, rain_entries)
         user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
         # Still an 18s rain rate.
         self.assertEqual(pkt['rainRate'], 18.0)
 
-        # Another tip 2s later.  0.04 over 4m
+        # Another tip 2s later.
         ts += 2
-        pkt = { 'dateTime': ts, 'rain': 0.01, 'rainRate': 18.0 }
+        pkt = { 'dateTime': ts, 'rain': 0.01, 'rainRate': 0.0 }
         user.rainrate.RainRate.add_packet(pkt, rain_entries)
         user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
         self.assertEqual(pkt['rainRate'], 18.0)
+
+        # Another tip 2s later.
+        ts += 2
+        pkt = { 'dateTime': ts, 'rain': 0.01, 'rainRate': 0.0 }
+        user.rainrate.RainRate.add_packet(pkt, rain_entries)
+        user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
+        self.assertEqual(pkt['rainRate'], 18.0)
+
+        # Another tip 4s later.
+        ts += 4
+        pkt = { 'dateTime': ts, 'rain': 0.01, 'rainRate': 0.0 }
+        user.rainrate.RainRate.add_packet(pkt, rain_entries)
+        user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
+        self.assertEqual(pkt['rainRate'], 9.0)
 
         # No tip for 112s
         for _ in range(0, 112, 2):
@@ -128,9 +143,8 @@ class RainRateTests(unittest.TestCase):
         pkt = { 'dateTime': ts, 'rain': 0.02, 'rainRate': 0.0 }
         user.rainrate.RainRate.add_packet(pkt, rain_entries)
         user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
-        # 0.02 split.  0.01 900s ago, 0.01 now
-        # That's 0.01 since previous tip 900s ago
-        self.assertEqual(pkt['rainRate'], 0.04)
+        # It's still a first tip (even if it was 2), so no rain rate.
+        self.assertEqual(pkt['rainRate'], 0.0)
 
         # Another tip 0.02 2s later.
         ts += 2
@@ -146,7 +160,7 @@ class RainRateTests(unittest.TestCase):
             pkt = { 'dateTime': ts, 'rain': 0.0, 'rainRate': 18.0 }
             user.rainrate.RainRate.add_packet(pkt, rain_entries)
         user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
-        # Prvious tip was 297s ago.
+        # Previous tip was 297s ago.
         self.assertAlmostEqual(pkt['rainRate'], 0.12162162162162163)
 
         # No rain for 5:00
@@ -154,7 +168,7 @@ class RainRateTests(unittest.TestCase):
             ts += 2
             pkt = { 'dateTime': ts, 'rain': 0.0, 'rainRate': 18.0 }
             user.rainrate.RainRate.add_packet(pkt, rain_entries)
-        # Prvious tip was 597s ago.
+        # Previous tip was 597s ago.
         user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
         self.assertAlmostEqual(pkt['rainRate'], 0.06040268456375839)
 
@@ -163,9 +177,85 @@ class RainRateTests(unittest.TestCase):
             ts += 2
             pkt = { 'dateTime': ts, 'rain': 0.0, 'rainRate': 18.0 }
             user.rainrate.RainRate.add_packet(pkt, rain_entries)
-        # Prvious tip was 897s ago.
+        # Previous tip was 897s ago.
         user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
         self.assertAlmostEqual(pkt['rainRate'], 0.04017857142857143)
+
+        # No rain for 20:00
+        for _ in range(600):
+            ts += 2
+            pkt = { 'dateTime': ts, 'rain': 0.0, 'rainRate': 18.0 }
+            user.rainrate.RainRate.add_packet(pkt, rain_entries)
+        # Previous tip was 2097s ago.
+        user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
+        self.assertAlmostEqual(pkt['rainRate'], 0.0)
+
+        # Add a tip
+        ts += 2
+        pkt = { 'dateTime': ts, 'rain': 0.1, 'rainRate': 18.0 }
+        user.rainrate.RainRate.add_packet(pkt, rain_entries)
+        user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
+        self.assertAlmostEqual(pkt['rainRate'], 0.0)
+
+        # Add a triple tip in 30s
+        ts += 30
+        pkt = { 'dateTime': ts, 'rain': 0.03, 'rainRate': 18.0 }
+        user.rainrate.RainRate.add_packet(pkt, rain_entries)
+        user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
+        # Expect 1 tip 30s ago, 1 tip 20s ago, 1 tip 10s ago, 1 tip now
+        # A tip in 10s is 360 tips an hour or 3.6" rain rate
+        self.assertAlmostEqual(pkt['rainRate'], 3.6)
+
+
+    def test_consecutive_packet_tips(self):
+        rain_entries = []
+        ts = 1668104200
+
+        # A single tip. 0.01
+        pkt = { 'dateTime': ts, 'rain': 0.01, 'rainRate': 0.0 }
+        user.rainrate.RainRate.add_packet(pkt, rain_entries)
+        user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
+        self.assertEqual(pkt['rainRate'], 0.0)
+
+        # Another tip 30s later.
+        ts += 30
+        pkt = { 'dateTime': ts, 'rain': 0.01, 'rainRate': 0.0 }
+        user.rainrate.RainRate.add_packet(pkt, rain_entries)
+        user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
+        # 0.01 in 30s is 1.2" an hour.
+        self.assertEqual(pkt['rainRate'], 1.2)
+
+        # Another tip in the next loop packet.
+        ts += 2
+        pkt = { 'dateTime': ts, 'rain': 0.01, 'rainRate': 0.0 }
+        user.rainrate.RainRate.add_packet(pkt, rain_entries)
+        user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
+        # We expect the last two rain events to be combined and then equally distributed from previous tip
+        # 32s ago: 0.01
+        # 16s ago: 0.01
+        # now    : 0.01
+        # 0.01 in 16s is 2.25"/hr.
+        self.assertEqual(pkt['rainRate'], 2.25)
+
+        # A single tip 10s later
+        ts += 10
+        pkt = { 'dateTime': ts, 'rain': 0.01, 'rainRate': 0.0 }
+        user.rainrate.RainRate.add_packet(pkt, rain_entries)
+        user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
+        self.assertEqual(pkt['rainRate'], 3.6)
+
+        # Another tip in the next loop packet.
+        ts += 2
+        pkt = { 'dateTime': ts, 'rain': 0.01, 'rainRate': 0.0 }
+        user.rainrate.RainRate.add_packet(pkt, rain_entries)
+        user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
+        # We expect the last two rain events to be combined and then equally distributed from previous tip
+        # 12s ago: 0.01
+        # 6s  ago: 0.01
+        # now    : 0.01
+        # 0.01 in 6s is 6.0"/hr.
+        self.assertEqual(pkt['rainRate'], 6.0)
+
 
     def test_compute_rain_rate_50_percent(self):
         rain_entries = []
