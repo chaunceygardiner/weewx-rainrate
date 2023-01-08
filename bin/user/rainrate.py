@@ -140,10 +140,24 @@ class RainRate(StdService):
             # Save rain events (if any).
             pkt_count = 0
             for pkt in archive_pkts:
-                pkt_time = pkt['dateTime']
-                if 'rain' in pkt and pkt['rain'] is not None and pkt['rain'] > 0.0:
-                    self.rain_entries.append(RainEntry(timestamp = pkt_time, amount = pkt['rain'], expiration = pkt_time + 900, dont_merge=False))
+                if 'rain' in pkt and pkt['rain'] is not None and pkt['rain'] > 0.0000001:
                     pkt_count += 1
+                    archive_time = pkt['dateTime']
+                    archive_amt = pkt['rain']
+                    if archive_amt < 0.0100001:
+                        # Add the single tip midway through archive period.
+                        pkt_time = round(archive_time - (self.archive_interval / 2.0))
+                        self.rain_entries.append(RainEntry(timestamp = pkt_time, amount = archive_amt, expiration = pkt_time + 900, dont_merge=True))
+                    else:
+                        # Evenly space the tips
+                        number_of_tips: int = round(archive_amt / 0.01)
+                        interval: int = round(self.archive_interval / number_of_tips)
+                        time_of_rain: int = archive_time
+                        for _ in range(number_of_tips):
+                            time_of_rain -= interval
+                            self.rain_entries.append(
+                                RainEntry(timestamp = time_of_rain, amount = archive_amt / number_of_tips, expiration = time_of_rain + 1800, dont_merge=True))
+                            time_of_rain -= interval
             log.debug('Collected %d archive packets containing rain in %f seconds.' % (pkt_count, time.time() - start))
         except Exception as e:
             # Print problem to log and give up.
@@ -218,6 +232,8 @@ class RainRate(StdService):
         pkt_time: int       = to_int(pkt['dateTime'])
         if 'rain' in pkt and pkt['rain'] is not None and pkt['rain'] > 0.0:
             pkt_rain = pkt['rain']
+            if pkt_rain > 0.0100001:
+                log.info("Multi-tip pkt[%d] rain: %f" % (pkt['dateTime'], pkt['rain']))
             if len(rain_entries) == 0:
                 # Record the first tip.  It doesn't matter if it is a multitip as we have no idea when the rain
                 # actually accumulated. As such, we'll record it as a single tip (0.01).
