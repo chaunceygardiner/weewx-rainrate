@@ -48,7 +48,7 @@ from weewx.engine import StdService
 # get a logger object
 log = logging.getLogger(__name__)
 
-RAINRATE_VERSION = '0.31'
+RAINRATE_VERSION = '0.32'
 
 if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and sys.version_info[1] < 7):
     raise weewx.UnsupportedFeature(
@@ -281,4 +281,6 @@ class RainRate(StdService):
                 rainRate2 = 3600 * 0.01 / (pkt['dateTime'] - rain_entries[0].timestamp)
             # Pick the lower of the two rates.
             pkt['rainRate'] = min(rainRate1, rainRate2)
+            if pkt['rainRate'] < 0.035:
+                pkt['rainRate'] = 0.0
         log.debug('new_loop(%d): Added/updated pkt[rainRate] of %f' % (pkt['dateTime'], pkt['rainRate']))

@@ -1,6 +1,10 @@
 weewx-rainrate change history
 -----------------------------
 
+0.32 Release 2023/01/?? 
+-----------------------
+When calculated rainRate falls below 0.04, report it as 0.0.
+
 0.31 Release 2023/01/?? 
 -----------------------
 Although never observed, handle case where double tip spans two loop records.
