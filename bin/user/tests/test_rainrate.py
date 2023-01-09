@@ -1,4 +1,4 @@
-#    Copyright (c) 2020 John A Kline <john@johnkline.com>
+#    Copyright (c) 2022-2023 John A Kline <john@johnkline.com>
 #
 #    See the file LICENSE.txt for your full rights.
 #
@@ -307,6 +307,88 @@ class RainRateTests(unittest.TestCase):
         # now    : 0.01
         # 0.01 in 6s is 6.0"/hr.
         self.assertEqual(pkt['rainRate'], 6.0)
+
+
+    def test_compute_rain_rate_fade_to_zero(self):
+        rain_entries = []
+
+        ts = 1668104200
+        pkt = { 'dateTime': ts, 'rain': 0.01, 'rainRate': 0.0 }
+        user.rainrate.RainRate.add_packet(pkt, rain_entries)
+        user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
+        self.assertEqual(pkt['rainRate'], 0.0)
+
+        ts += 60
+        pkt = { 'dateTime': ts, 'rain': 0.01, 'rainRate': 0.0 }
+        user.rainrate.RainRate.add_packet(pkt, rain_entries)
+        user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
+        self.assertEqual(pkt['rainRate'], 0.6)
+
+        ts += 300
+        pkt = { 'dateTime': ts, 'rain': 0.00, 'rainRate': 0.0 }
+        user.rainrate.RainRate.add_packet(pkt, rain_entries)
+        user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
+        self.assertEqual(pkt['rainRate'], 0.12)
+
+        ts += 60
+        pkt = { 'dateTime': ts, 'rain': 0.00, 'rainRate': 0.0 }
+        user.rainrate.RainRate.add_packet(pkt, rain_entries)
+        user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
+        self.assertEqual(pkt['rainRate'], 0.1)
+
+        ts += 240
+        pkt = { 'dateTime': ts, 'rain': 0.00, 'rainRate': 0.0 }
+        user.rainrate.RainRate.add_packet(pkt, rain_entries)
+        user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
+        self.assertEqual(pkt['rainRate'], 0.06)
+
+        ts += 60
+        pkt = { 'dateTime': ts, 'rain': 0.00, 'rainRate': 0.0 }
+        user.rainrate.RainRate.add_packet(pkt, rain_entries)
+        user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
+        self.assertAlmostEqual(pkt['rainRate'], 0.0545455)
+
+        ts += 60
+        pkt = { 'dateTime': ts, 'rain': 0.00, 'rainRate': 0.0 }
+        user.rainrate.RainRate.add_packet(pkt, rain_entries)
+        user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
+        self.assertAlmostEqual(pkt['rainRate'], 0.05)
+
+        ts += 60
+        pkt = { 'dateTime': ts, 'rain': 0.00, 'rainRate': 0.0 }
+        user.rainrate.RainRate.add_packet(pkt, rain_entries)
+        user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
+        self.assertAlmostEqual(pkt['rainRate'], 0.0461538)
+
+        ts += 60
+        pkt = { 'dateTime': ts, 'rain': 0.00, 'rainRate': 0.0 }
+        user.rainrate.RainRate.add_packet(pkt, rain_entries)
+        user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
+        self.assertAlmostEqual(pkt['rainRate'], 0.0428571)
+
+        ts += 60
+        pkt = { 'dateTime': ts, 'rain': 0.00, 'rainRate': 0.0 }
+        user.rainrate.RainRate.add_packet(pkt, rain_entries)
+        user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
+        self.assertAlmostEqual(pkt['rainRate'], 0.04)
+
+        ts += 60
+        pkt = { 'dateTime': ts, 'rain': 0.00, 'rainRate': 0.0 }
+        user.rainrate.RainRate.add_packet(pkt, rain_entries)
+        user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
+        self.assertAlmostEqual(pkt['rainRate'], 0.0375)
+
+        ts += 60
+        pkt = { 'dateTime': ts, 'rain': 0.00, 'rainRate': 0.0 }
+        user.rainrate.RainRate.add_packet(pkt, rain_entries)
+        user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
+        self.assertAlmostEqual(pkt['rainRate'], 0.0352941)
+
+        ts += 60
+        pkt = { 'dateTime': ts, 'rain': 0.00, 'rainRate': 0.0 }
+        user.rainrate.RainRate.add_packet(pkt, rain_entries)
+        user.rainrate.RainRate.compute_rain_rate(pkt, rain_entries)
+        self.assertEqual(pkt['rainRate'], 0.0)
 
 
     def test_compute_rain_rate_50_percent(self):

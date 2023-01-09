@@ -1,7 +1,7 @@
 # weewx-rainrate
 *Open source plugin for WeeWX software.
 
-Copyright (C)2022 by John A Kline (john@johnkline.com)
+Copyright (C)2022-2023 by John A Kline (john@johnkline.com)
 
 **This extension requires Python 3.7 or later and WeeWX 4.**
 
